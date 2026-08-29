@@ -39,25 +39,25 @@ public class PolicyLifecycleManager
             throw new ArgumentException("Cancellation date cannot be before policy effective date.");
         }
 
-        // Trong vòng 14 ngày (Cooling-off period): Hoàn 100%
+        // Within 14 days (Cooling-off period): 100% full refund
         var daysActive = (cancellationDateUtc - policy.EffectiveDateUtc).TotalDays;
         if (daysActive <= 14)
         {
             return policy.AnnualPremium;
         }
 
-        // Đã hết hạn hợp đồng
+        // Already expired policy
         if (cancellationDateUtc >= policy.ExpiryDateUtc)
         {
             return 0m;
         }
 
-        // Sau 14 ngày: Tính theo tỷ lệ ngày chưa sử dụng trừ 20% phí quản lý
+        // After 14 days: Pro-rata refund on unused days minus 20% administrative cancellation fee
         var totalDays = (policy.ExpiryDateUtc - policy.EffectiveDateUtc).TotalDays;
         var unusedDays = (policy.ExpiryDateUtc - cancellationDateUtc).TotalDays;
         var unearnedPremium = policy.AnnualPremium * (decimal)(unusedDays / totalDays);
 
-        // Phạt 20%
+        // 20% penalty fee (retain 80%)
         var refund = unearnedPremium * 0.80m;
         return Math.Round(refund, 2);
     }

@@ -27,7 +27,7 @@ public class OrderService
             throw new ArgumentOutOfRangeException(nameof(request.Amount), "Order amount must be greater than zero.");
         }
 
-        // 1. Kiểm tra khách hàng
+        // 1. Verify customer
         var customer = await _customerRepository.GetByIdAsync(request.CustomerId, cancellationToken);
         if (customer is null)
         {
@@ -39,14 +39,14 @@ public class OrderService
             throw new CustomerBlockedException(request.CustomerId);
         }
 
-        // 2. Xử lý thanh toán
+        // 2. Process payment
         var paymentResult = await _paymentService.ProcessPaymentAsync(request.CustomerId, request.Amount, cancellationToken);
         if (!paymentResult.Success)
         {
             throw new PaymentFailedException(paymentResult.ErrorMessage ?? "Unknown payment error.");
         }
 
-        // 3. Lưu đơn hàng
+        // 3. Persist order
         var order = new Order(Guid.NewGuid(), customer.Id, request.Amount, DateTime.UtcNow);
         await _orderRepository.SaveAsync(order, cancellationToken);
 

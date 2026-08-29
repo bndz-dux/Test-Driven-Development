@@ -12,11 +12,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout mã nguồn
+      # 1. Checkout repository source code
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # 2. Cài đặt .NET SDK 8
+      # 2. Setup .NET SDK
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
@@ -30,7 +30,7 @@ jobs:
       - name: Build Solution
         run: dotnet build --no-restore --configuration Release
 
-      # 5. Chạy Unit Tests & Đo Code Coverage
+      # 5. Run Unit Tests & Collect Coverage
       - name: Run Unit Tests & Collect Coverage
         run: >
           dotnet test tests/InsuranceQuoteEngine.UnitTests/InsuranceQuoteEngine.UnitTests.csproj
@@ -40,13 +40,13 @@ jobs:
           --results-directory ./TestResults
           --logger "trx;LogFileName=test_results.trx"
 
-      # 6. Cài đặt các công cụ CLI
+      # 6. Install global CLI tools (ReportGenerator & Stryker)
       - name: Install Global Tools (ReportGenerator & Stryker)
         run: |
           dotnet tool install -g dotnet-reportgenerator-globaltool
           dotnet tool install -g dotnet-stryker
 
-      # 7. Sinh báo cáo Code Coverage HTML & Summary
+      # 7. Generate Code Coverage HTML Report & Summary
       - name: Generate Coverage Report
         run: >
           reportgenerator
@@ -54,12 +54,12 @@ jobs:
           -targetdir:"./CoverageReport"
           -reporttypes:"HtmlInline_AzurePipelines;Badges;Cobertura"
 
-      # 8. Chạy Mutation Testing (Stryker)
+      # 8. Run Mutation Testing Gate (Stryker)
       - name: Run Stryker Mutation Testing Gate
         working-directory: ./tests/InsuranceQuoteEngine.UnitTests
         run: dotnet stryker --config-file stryker-config.json
 
-      # 9. Đăng tải Test Results lên giao diện GitHub Actions
+      # 9. Upload Test Results Artifact
       - name: Upload Test Results Artifact
         if: always()
         uses: actions/upload-artifact@v4
@@ -67,7 +67,7 @@ jobs:
           name: unit-test-results
           path: ./TestResults
 
-      # 10. Đăng tải Coverage Report lên giao diện GitHub Actions
+      # 10. Upload Coverage Report Artifact
       - name: Upload Coverage Report Artifact
         if: always()
         uses: actions/upload-artifact@v4

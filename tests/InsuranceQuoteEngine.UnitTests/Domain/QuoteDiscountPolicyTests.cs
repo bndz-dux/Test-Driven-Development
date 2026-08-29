@@ -7,7 +7,7 @@ namespace InsuranceQuoteEngine.UnitTests.Domain;
 
 public class QuoteDiscountPolicyTests
 {
-    // Giả lập một hàm tính giảm giá dựa trên hồ sơ khách hàng
+    // Helper function to calculate discount based on customer profile
     private decimal CalculateDiscountPercentage(CustomerProfile customer)
     {
         return customer.Type switch
@@ -21,7 +21,7 @@ public class QuoteDiscountPolicyTests
     [Fact]
     public void CalculateDiscount_ShouldReturn20Percent_WhenCustomerIsVip()
     {
-        // Arrange - Cực kỳ tường minh, không có dữ liệu thừa
+        // Arrange - Expressive and clean with no redundant noise
         var vipCustomer = new CustomerProfileBuilder()
             .AsVip()
             .Build();
@@ -51,7 +51,7 @@ public class QuoteDiscountPolicyTests
     [Fact]
     public void CalculateDiscount_ShouldReturnZero_WhenCustomerIsStandard()
     {
-        // Arrange - Dùng giá trị mặc định (Standard)
+        // Arrange - Using default value (Standard)
         var standardCustomer = new CustomerProfileBuilder().Build();
 
         // Act
@@ -64,7 +64,7 @@ public class QuoteDiscountPolicyTests
     [Fact]
     public void CustomerProfileBuilder_ImplicitConversion_ShouldInstantiateProfileDirectly()
     {
-        // Arrange & Act - Sử dụng implicit operator
+        // Arrange & Act - Using implicit operator
         CustomerProfile customer = new CustomerProfileBuilder()
             .WithFullName("Alice Smith")
             .WithAge(28)
@@ -97,7 +97,7 @@ public class QuoteDiscountPolicyTests
     [Fact]
     public void QuoteBuilder_NestedConfiguration_ShouldCreateComplexQuoteCleanly()
     {
-        // Minh họa cấu hình lồng nhau rất tự nhiên và sạch đẹp
+        // Demonstrates expressive nested builder syntax
         InsuranceQuote quote = new InsuranceQuoteBuilder()
             .WithCustomer(c => c.AsVip().WithAge(45))
             .WithProperty(p => p.InFloodZone(true).WithEstimatedValue(2_000_000m))

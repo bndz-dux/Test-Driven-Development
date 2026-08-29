@@ -1,25 +1,25 @@
-# Lesson 04: Xây dựng Test Data Builders & Fixtures (Test Data Builders)
+# Lesson 04: Test Data Builders & Fixtures
 
-## 🎯 Mục tiêu bài học
-- Nhận diện vấn đề **"Test Clutter" (Rác trong test)** khi phải khởi tạo các đối tượng lớn với nhiều thuộc tính không liên quan đến bài test.
-- Nắm vững mẫu thiết kế **Test Data Builder Pattern**:
-  - Cung cấp sẵn các giá trị mặc định hợp lệ (Valid Defaults).
-  - Sử dụng phương thức chuỗi (Fluent API: `With...`) để tùy biến dữ liệu bài test cần.
-- Xây dựng thư viện Builders tái sử dụng: `CustomerBuilder`, `OrderBuilder`, `QuoteBuilder`.
-- Áp dụng **xUnit Fixtures (`IClassFixture<T>`)** để chia sẻ tài nguyên khởi tạo tốn kém.
-- **Thực hành:** Refactor toàn bộ test suite từ cách khởi tạo truyền thống sang dùng Builders.
+## 🎯 Lesson Objectives
+- Identify and eliminate **"Test Clutter"** when instantiating large objects with numerous irrelevant properties in test methods.
+- Master the **Test Data Builder Pattern**:
+  - Provide sensible, valid default values.
+  - Expose a fluent API (`With...`) to override only test-relevant properties.
+- Build reusable builder libraries: `CustomerBuilder`, `OrderBuilder`, `QuoteBuilder`.
+- Apply **xUnit Fixtures (`IClassFixture<T>`)** to share expensive setup resources across tests.
+- **Hands-on:** Refactor brittle, noisy test object setups using expressive Test Data Builders.
 
 ---
 
-## 😫 1. Vấn đề của khởi tạo dữ liệu trực tiếp trong Test
+## 😫 1. The Problem with Inline Test Setup
 
-Hãy nhìn vào đoạn test dưới đây:
+Consider this test example:
 
 ```csharp
 [Fact]
 public void CalculateDiscount_ShouldApplyDiscount_ForVipCustomer()
 {
-    // Arrange: Quá nhiều dòng rác, thuộc tính phụ che lấp mất mục đích thực sự của bài test!
+    // Arrange: Excessive irrelevant clutter obscures the actual intent of the test!
     var customer = new Customer
     {
         Id = Guid.NewGuid(),
@@ -29,7 +29,7 @@ public void CalculateDiscount_ShouldApplyDiscount_ForVipCustomer()
         PhoneNumber = "0901234567",
         Address = "123 Main St, District 1, HCM",
         DateOfBirth = new DateTime(1990, 5, 20),
-        MembershipLevel = CustomerType.Vip, // <-- ĐÂY LÀ GIÁ TRỊ DUY NHẤT ẢNH HƯỞNG ĐẾN TEST!
+        MembershipLevel = CustomerType.Vip, // <-- THE ONLY PROPERTY RELEVANT TO THIS TEST!
         IsEmailVerified = true,
         CreatedAt = DateTime.UtcNow
     };
@@ -40,25 +40,25 @@ public void CalculateDiscount_ShouldApplyDiscount_ForVipCustomer()
 }
 ```
 
-### Hậu quả:
-1. **Khó đọc:** Người đọc test phải căng mắt tìm xem dòng nào là mấu chốt kích hoạt nghiệp vụ.
-2. **Khó bảo trì:** Khi thêm một trường bắt buộc mới vào `Customer` (ví dụ `NationalId`), **hàng trăm bài test** sẽ đồng loạt báo lỗi biên dịch (Compile Error).
+### Consequences:
+1. **Low Readability:** Readers must sift through boilerplate to find what triggers the business rule.
+2. **High Fragility:** Adding a single mandatory property to `Customer` (e.g. `NationalId`) causes **hundreds of tests** across the solution to fail compilation simultaneously.
 
 ---
 
-## ✨ 2. Giải pháp: Test Data Builder Pattern
+## ✨ 2. The Solution: Test Data Builder Pattern
 
-Test Data Builder là một class phụ trợ trong thư mục test có nhiệm vụ:
-1. Tạo một đối tượng có trạng thái **mặc định hợp lệ (valid default state)**.
-2. Cung cấp các hàm `With...` trả về chính builder (`this`) để ghi đè chỉ những thuộc tính mà bài test quan tâm.
-3. Cung cấp hàm `Build()` hoặc toán tử ép kiểu ngầm định (`implicit operator`) để trả về đối tượng thật.
+A Test Data Builder is a test helper class designed to:
+1. Initialize an object with a **valid default state**.
+2. Provide fluent `With...` methods returning the builder (`this`) to override only properties relevant to the specific test scenario.
+3. Provide a `Build()` method or an `implicit operator` to instantiate the domain object.
 
-### Sau khi dùng Builder:
+### Refactored with a Builder:
 ```csharp
 [Fact]
 public void CalculateDiscount_ShouldApplyDiscount_ForVipCustomer()
 {
-    // Arrange: Cực kỳ ngắn gọn, thể hiện rõ 100% ý đồ nghiệp vụ!
+    // Arrange: Expressive, concise, and 100% focused on business intent!
     var customer = new CustomerBuilder()
         .AsVip()
         .Build();
@@ -71,11 +71,11 @@ public void CalculateDiscount_ShouldApplyDiscount_ForVipCustomer()
 
 ---
 
-## 🛠️ 3. Thực hành Step-by-Step: Xây dựng Reusable Builders
+## 🛠️ 3. Step-by-Step Exercise: Building Reusable Builders
 
-### Bước 3.1: Định nghĩa Domain Models
+### Step 3.1: Define Domain Models
 
-Tạo file `src/InsuranceQuoteEngine/Domain/InsuranceModels.cs`:
+Create file `src/InsuranceQuoteEngine/Domain/InsuranceModels.cs`:
 
 ```csharp
 namespace InsuranceQuoteEngine.Domain;
@@ -122,9 +122,9 @@ public record InsuranceQuote
 
 ---
 
-### Bước 3.2: Xây dựng `CustomerProfileBuilder`
+### Step 3.2: Implement `CustomerProfileBuilder`
 
-Tạo file `tests/InsuranceQuoteEngine.UnitTests/Builders/CustomerProfileBuilder.cs`:
+Create file `tests/InsuranceQuoteEngine.UnitTests/Builders/CustomerProfileBuilder.cs`:
 
 ```csharp
 using InsuranceQuoteEngine.Domain;
@@ -194,16 +194,16 @@ public class CustomerProfileBuilder
         };
     }
 
-    // Tiện ích: Cho phép gán trực tiếp CustomerProfile customer = new CustomerProfileBuilder();
+    // Implicit operator enables direct assignment: CustomerProfile customer = new CustomerProfileBuilder();
     public static implicit operator CustomerProfile(CustomerProfileBuilder builder) => builder.Build();
 }
 ```
 
 ---
 
-### Bước 3.3: Xây dựng `PropertyDetailsBuilder` & `InsuranceQuoteBuilder`
+### Step 3.3: Implement `PropertyDetailsBuilder` & `InsuranceQuoteBuilder`
 
-Tạo file `tests/InsuranceQuoteEngine.UnitTests/Builders/PropertyDetailsBuilder.cs`:
+Create file `tests/InsuranceQuoteEngine.UnitTests/Builders/PropertyDetailsBuilder.cs`:
 
 ```csharp
 using InsuranceQuoteEngine.Domain;
@@ -255,7 +255,7 @@ public class PropertyDetailsBuilder
 }
 ```
 
-Tạo file `tests/InsuranceQuoteEngine.UnitTests/Builders/InsuranceQuoteBuilder.cs`:
+Create file `tests/InsuranceQuoteEngine.UnitTests/Builders/InsuranceQuoteBuilder.cs`:
 
 ```csharp
 using InsuranceQuoteEngine.Domain;
@@ -349,9 +349,9 @@ public class InsuranceQuoteBuilder
 
 ---
 
-### Bước 3.4: Sử dụng Builders trong Unit Tests thực tế
+### Step 3.4: Use Builders in Unit Tests
 
-Tạo file `tests/InsuranceQuoteEngine.UnitTests/Domain/QuoteDiscountPolicyTests.cs`:
+Create file `tests/InsuranceQuoteEngine.UnitTests/Domain/QuoteDiscountPolicyTests.cs`:
 
 ```csharp
 using FluentAssertions;
@@ -363,7 +363,6 @@ namespace InsuranceQuoteEngine.UnitTests.Domain;
 
 public class QuoteDiscountPolicyTests
 {
-    // Giả lập một hàm tính giảm giá dựa trên hồ sơ khách hàng
     private decimal CalculateDiscountPercentage(CustomerProfile customer)
     {
         return customer.Type switch
@@ -377,7 +376,7 @@ public class QuoteDiscountPolicyTests
     [Fact]
     public void CalculateDiscount_ShouldReturn20Percent_WhenCustomerIsVip()
     {
-        // Arrange - Cực kỳ tường minh, không có dữ liệu thừa
+        // Arrange - Expressive and clean with no redundant noise
         var vipCustomer = new CustomerProfileBuilder()
             .AsVip()
             .Build();
@@ -407,7 +406,7 @@ public class QuoteDiscountPolicyTests
     [Fact]
     public void CalculateDiscount_ShouldReturnZero_WhenCustomerIsStandard()
     {
-        // Arrange - Dùng giá trị mặc định (Standard)
+        // Arrange - Using default value (Standard)
         var standardCustomer = new CustomerProfileBuilder().Build();
 
         // Act
@@ -420,7 +419,7 @@ public class QuoteDiscountPolicyTests
     [Fact]
     public void QuoteBuilder_NestedConfiguration_ShouldCreateComplexQuoteCleanly()
     {
-        // Minh họa cấu hình lồng nhau rất tự nhiên và sạch đẹp
+        // Demonstrates nested builder configuration
         InsuranceQuote quote = new InsuranceQuoteBuilder()
             .WithCustomer(c => c.AsVip().WithAge(45))
             .WithProperty(p => p.InFloodZone(true).WithEstimatedValue(2_000_000m))
@@ -436,21 +435,21 @@ public class QuoteDiscountPolicyTests
 
 ---
 
-## ⚡ 4. Sử dụng xUnit Fixtures (`IClassFixture<T>`)
+## ⚡ 4. Using xUnit Fixtures (`IClassFixture<T>`)
 
-Khi có những tài nguyên khởi tạo tốn nhiều thời gian (ví dụ: cấu hình bộ nhớ chung, ánh xạ AutoMapper/JsonSerializerOptions), hãy dùng `IClassFixture<T>` để khởi tạo **1 lần duy nhất** cho cả class test thay vì mỗi test method:
+When test execution requires expensive one-time setup (such as configuring in-memory shared test states or serializer configurations), implement `IClassFixture<T>` to instantiate resources **once per test class** rather than per test method:
 
 ```csharp
 public class SharedEngineFixture : IDisposable
 {
     public SharedEngineFixture()
     {
-        // Khởi tạo tài nguyên dùng chung nặng
+        // Initialize expensive shared resources
     }
 
     public void Dispose()
     {
-        // Dọn dẹp tài nguyên
+        // Clean up resources
     }
 }
 
@@ -467,10 +466,10 @@ public class EngineFixtureTests : IClassFixture<SharedEngineFixture>
 
 ---
 
-## ✅ Check-list hoàn thành Lesson 04
-- [ ] Hiểu rõ lợi ích của Test Data Builder trong việc giảm thiểu "Test Clutter" và chống "Brittle Tests".
-- [ ] Tạo thành công `CustomerProfileBuilder`, `PropertyDetailsBuilder`, `InsuranceQuoteBuilder`.
-- [ ] Áp dụng `implicit operator` và Nested Builders (`Action<TBuilder>`).
-- [ ] Refactor các đoạn khởi tạo test cũ để sử dụng Builders.
+## ✅ Lesson 04 Completion Checklist
+- [ ] Understand the role of Test Data Builders in eliminating test clutter and preventing brittle tests.
+- [ ] Successfully built `CustomerProfileBuilder`, `PropertyDetailsBuilder`, and `InsuranceQuoteBuilder`.
+- [ ] Implemented `implicit operator` and nested builders (`Action<TBuilder>`).
+- [ ] Refactored test initializations to leverage builder patterns.
 
-👉 **Tiếp theo:** Chuyển sang [Lesson 05: Thực hành Test-Driven Development (TDD) Cốt Lõi](./05-tdd-core-workflow.md)!
+👉 **Next Step:** Proceed to [Lesson 05: TDD Core Workflow (Red-Green-Refactor)](./05-tdd-core-workflow.md)!

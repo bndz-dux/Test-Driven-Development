@@ -1,20 +1,20 @@
-# Lesson 08: Đánh giá chất lượng Test với Mutation Testing (Stryker.NET)
+# Lesson 08: Mutation Testing with Stryker.NET
 
-## 🎯 Mục tiêu bài học
-- Hiểu được nghịch lý: **100% Code Coverage không có nghĩa là Test Suite của bạn chất lượng**.
-- Làm quen với khái niệm **Mutation Testing (Kiểm thử đột biến)**:
-  - Đột biến (Mutants) là gì?
-  - Thế nào là **Killed Mutant** (Đột biến bị tiêu diệt - Tốt) vs **Survived Mutant** (Đột biến sống sót - Lỗ hổng trong Test)?
-  - Công thức tính **Mutation Score**.
-- Cài đặt và sử dụng công cụ **Stryker.NET** trong .NET.
-- Đọc báo cáo trực quan dạng HTML của Stryker, tìm các Surviving Mutants và viết thêm test để tiêu diệt chúng.
-- Thiết lập mục tiêu đạt Mutation Score **≥ 80%**.
+## 🎯 Lesson Objectives
+- Understand the testing paradox: **100% Code Coverage does not guarantee high test quality**.
+- Master the principles of **Mutation Testing**:
+  - What are Mutants?
+  - **Killed Mutants** (defect successfully detected by tests - Good) vs. **Survived Mutants** (defect undetected - Gap in test suite).
+  - Calculating the **Mutation Score**.
+- Install, configure, and execute **Stryker.NET** for .NET solutions.
+- Analyze interactive HTML reports, locate surviving mutants, and write targeted assertions to eliminate them.
+- Establish an industry-standard Mutation Score threshold of **≥ 80%**.
 
 ---
 
-## 🤯 1. Tại sao Code Coverage lại "lừa dối" chúng ta?
+## 🤯 1. Why Code Coverage Can Be Deceptive
 
-Hãy xem xét đoạn code sau:
+Consider the following method:
 
 ```csharp
 public bool IsAdult(int age)
@@ -23,59 +23,59 @@ public bool IsAdult(int age)
 }
 ```
 
-Và bạn viết bài test:
+And a poorly asserted test:
 ```csharp
 [Fact]
 public void IsAdult_Test()
 {
-    var result = IsAdult(25); // Thực thi qua dòng code => 100% Code Coverage!
-    // Nhưng bạn QUÊN không assert gì cả, hoặc chỉ assert: result.Should().NotBeNull();
+    var result = IsAdult(25); // Executes the line => 100% Code Coverage!
+    // But contains NO assertions, or a trivial assertion like: result.Should().NotBeNull();
 }
 ```
-Mặc dù công cụ đo Coverage báo bạn đạt **100% Line Coverage**, nhưng nếu ai đó sửa code thành `return false;` thì test vẫn pass!
+Although coverage tools report **100% Line Coverage**, if someone alters the code to `return false;`, this test will still pass.
 
-> **Mutation Testing đặt câu hỏi ngược lại:**  
-> *"Nếu mã nguồn bị cố tình làm sai (gây lỗi đột biến), bộ test của bạn có phát hiện ra và báo ĐỎ hay không?"*
+> **Mutation Testing asks the reverse question:**  
+> *"If the production code is deliberately mutated to introduce artificial defects, will your test suite catch the bugs and report a RED failure?"*
 
 ---
 
-## 🧬 2. Stryker.NET hoạt động như thế nào?
+## 🧬 2. How Stryker.NET Works
 
-Stryker tự động quét mã nguồn C# và tạo ra hàng loạt các **đột biến (mutants)** nhỏ, ví dụ:
+Stryker scans your C# syntax tree and injects artificial code modifications (**mutants**):
 
-| Mã nguồn gốc của bạn | Stryker sửa thành (Đột biến) | Loại đột biến |
+| Original Source Code | Mutated Code (Mutant) | Mutation Type |
 | :--- | :--- | :--- |
 | `if (age >= 18)` | `if (age > 18)` | Binary Expression Mutation (BVA) |
 | `if (age >= 18)` | `if (age <= 18)` | Equality Mutation |
 | `return price - discount;` | `return price + discount;` | Arithmetic Mutation |
 | `if (hasClaims)` | `if (!hasClaims)` | Boolean Mutation |
 | `discount = 0.20m;` | `discount = 0.0m;` | Constant Mutation |
-| `_repo.Save(order);` | *(Xóa dòng gọi hàm này)* | Statement Removal Mutation |
+| `_repo.Save(order);` | *(Remove this method call)* | Statement Removal Mutation |
 
-Sau khi tạo đột biến:
-1. Stryker chạy lại bộ Unit Test của bạn.
-2. **Nếu Test BÁO FAIL (ĐỎ):** 👉 **MUTANT KILLED (Tiêu diệt thành công!)** → Bộ test rất nhạy và tốt.
-3. **Nếu Test VẪN PASS (XANH):** 👉 **MUTANT SURVIVED (Đột biến sống sót!)** → Bộ test có lỗ hổng, thiếu assertion hoặc thiếu test case ở biên đó!
+After creating mutants:
+1. Stryker re-runs relevant unit tests against each mutation.
+2. **If the test FAILS (RED):** 👉 **MUTANT KILLED (Success!)** → The test suite is sensitive and caught the bug.
+3. **If tests PASS (GREEN):** 👉 **MUTANT SURVIVED (Failure!)** → The test suite missed the mutation due to missing edge cases or weak assertions.
 
 $$\text{Mutation Score} = \left( \frac{\text{Killed Mutants} + \text{Timeout Mutants}}{\text{Total Mutants}} \right) \times 100\%$$
 
 ---
 
-## 🛠️ 3. Thực hành Step-by-Step: Cài đặt và Chạy Stryker.NET
+## 🛠️ 3. Step-by-Step Exercise: Installing & Running Stryker.NET
 
-### Bước 3.1: Cài đặt công cụ toàn cục `dotnet-stryker`
+### Step 3.1: Install Global Tool `dotnet-stryker`
 
-Mở terminal và chạy lệnh:
+Open your terminal and run:
 ```bash
 dotnet tool install -g dotnet-stryker
 ```
-*(Nếu đã cài trước đó, bạn có thể cập nhật bằng: `dotnet tool update -g dotnet-stryker`)*
+*(If already installed, update via: `dotnet tool update -g dotnet-stryker`)*
 
 ---
 
-### Bước 3.2: Tạo file cấu hình `stryker-config.json`
+### Step 3.2: Create Configuration File `stryker-config.json`
 
-Tạo file `tests/InsuranceQuoteEngine.UnitTests/stryker-config.json`:
+Create file `tests/InsuranceQuoteEngine.UnitTests/stryker-config.json`:
 
 ```json
 {
@@ -99,51 +99,51 @@ Tạo file `tests/InsuranceQuoteEngine.UnitTests/stryker-config.json`:
 }
 ```
 
-**Giải thích cấu hình:**
-- `"project"`: Chỉ định project mã nguồn cần kiểm thử đột biến.
-- `"reporters"`: Xuất kết quả ra màn hình console và sinh file HTML tương tác trực quan.
-- `"thresholds"`: Tuân thủ quy tắc `high >= low >= break`.
-  - `high: 85`: Điểm xanh (mức chất lượng cao).
-  - `low: 80`: Điểm vàng (mức cảnh báo).
-  - `break: 70`: Điểm đỏ, nếu Mutation Score < 70% thì Stryker sẽ trả về mã lỗi (Exit Code != 0) để ngắt CI/CD Pipeline!
-- `"mutate"`: Chỉ tập trung đột biến vào tầng logic cốt lõi `Domain/`, bỏ qua các file định nghĩa Exception đơn giản.
+**Configuration Breakdown:**
+- `"project"`: Specifies the target class library project under test.
+- `"reporters"`: Outputs progress to the terminal and generates an interactive HTML report.
+- `"thresholds"`: Enforces quality gates (`high >= low >= break`).
+  - `high: 85`: High-quality target.
+  - `low: 80`: Warning threshold.
+  - `break: 70`: Pipeline break threshold. If Mutation Score drops below 70%, Stryker exits with a non-zero exit code to fail CI.
+- `"mutate"`: Restricts mutation analysis to domain logic while excluding boilerplate exceptions.
 
 ---
 
-### Bước 3.3: Chạy Stryker.NET
+### Step 3.3: Execute Stryker.NET
 
-Di chuyển vào thư mục test và thực thi:
+Navigate to the test directory and execute:
 
 ```bash
 cd tests/InsuranceQuoteEngine.UnitTests
 dotnet stryker
 ```
 
-Stryker sẽ:
-1. Build toàn bộ dự án.
-2. Chạy baseline test ban đầu (đảm bảo tất cả test đang xanh).
-3. Đột biến mã nguồn và chạy các bài test liên quan song song.
-4. In điểm số Mutation Score ra console và xuất file báo cáo tại `StrykerOutput/.../reports/mutation-report.html`.
+Stryker will:
+1. Compile the solution.
+2. Run baseline unit tests.
+3. Inject mutations and run impacted tests in parallel.
+4. Output the Mutation Score and write the HTML report to `StrykerOutput/.../reports/mutation-report.html`.
 
 ---
 
-## 🔍 4. Phân tích Báo cáo và Tiêu diệt Surviving Mutants
+## 🔍 4. Analyzing Reports and Killing Surviving Mutants
 
-Giả sử trong `InsuranceQuoteEngineService.cs` có đoạn code:
+Suppose `InsuranceQuoteEngineService.cs` contains:
 
 ```csharp
 if (request.Customer.Age < 18 || request.Customer.Age > 75)
 ```
 
-Stryker đột biến thành:
+Stryker mutates this to:
 ```csharp
 if (request.Customer.Age <= 18 || request.Customer.Age > 75)
 ```
 
-Nếu trong test bạn chỉ test tuổi `17` và `30` mà **chưa test tuổi đúng `18`**, mutant này sẽ **SỐNG SÓT (Survived)**!
+If the test suite tests age `17` and age `30` but **omits testing age `18` exactly**, this mutant will **SURVIVE**!
 
-### Cách tiêu diệt Mutant:
-Thêm test case điểm biên chính xác cho tuổi `18`:
+### Killing the Mutant:
+Add an explicit boundary test for age `18`:
 ```csharp
 [Fact]
 public void GenerateQuote_ShouldApprove_WhenAgeIsExactLowerBoundary18()
@@ -158,24 +158,24 @@ public void GenerateQuote_ShouldApprove_WhenAgeIsExactLowerBoundary18()
 }
 ```
 
-Chạy lại `dotnet stryker` → Mutant ngay lập tức bị **KILLED** và điểm số tăng lên!
+Re-running `dotnet stryker` will now report the mutant as **KILLED**, increasing the overall score!
 
 ---
 
-## 🎯 5. Mục tiêu điểm số chuẩn mực
+## 🎯 5. Standard Score Targets
 
-- **Dưới 60%:** Test suite kém, chỉ mang tính hình thức lấy coverage.
-- **70% – 79%:** Mức khá, đã kiểm tra được phần lớn happy path và lỗi lớn.
-- **80% – 90%:** **Mức chuẩn chuyên nghiệp (Recommended Target)**. Bao quát tốt các biên, điều kiện logic và nhánh rẽ.
-- **100%:** Thường không cần thiết vì có những đột biến tương đương (Equivalent Mutants) không thể tiêu diệt hoặc không có giá trị kinh tế.
+- **< 60%:** Weak test suite with superficial assertions.
+- **70% – 79%:** Acceptable baseline covering primary paths and major defects.
+- **80% – 90%:** **Professional Standard (Recommended Target)**. Strong boundary coverage and rigorous assertions.
+- **100%:** Rarely practical due to equivalent mutants that cannot be killed without unnecessary overhead.
 
 ---
 
-## ✅ Check-list hoàn thành Lesson 08
-- [ ] Hiểu rõ tại sao 100% Code Coverage vẫn có thể lọt lỗi nếu thiếu Mutation Testing.
-- [ ] Cài đặt thành công `dotnet-stryker` và tạo file cấu hình `stryker-config.json`.
-- [ ] Chạy Stryker và mở xem file báo cáo HTML `mutation-report.html`.
-- [ ] Tìm ra ít nhất 1 Surviving Mutant và viết thêm bài test để Kill mutant đó.
-- [ ] Đưa Mutation Score của dự án đạt **≥ 80%**.
+## ✅ Lesson 08 Completion Checklist
+- [ ] Understand why 100% Code Coverage alone is insufficient without mutation validation.
+- [ ] Successfully installed `dotnet-stryker` and configured `stryker-config.json`.
+- [ ] Executed Stryker and reviewed `mutation-report.html`.
+- [ ] Identified and killed surviving mutants by strengthening boundary tests.
+- [ ] Achieved a Mutation Score **≥ 80%**.
 
-👉 **Tiếp theo:** Chuyển sang [Lesson 09: Đo lường Code Coverage với Coverlet & ReportGenerator](./09-code-coverage-coverlet.md)!
+👉 **Next Step:** Proceed to [Lesson 09: Measuring Code Coverage with Coverlet & ReportGenerator](./09-code-coverage-coverlet.md)!

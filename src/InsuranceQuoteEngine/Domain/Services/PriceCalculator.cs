@@ -3,11 +3,11 @@ namespace InsuranceQuoteEngine.Domain;
 public class PriceCalculator
 {
     /// <summary>
-    /// Tính toán giá tiền sau khi áp dụng phần trăm giảm giá.
+    /// Calculates the discounted price after applying a percentage discount.
     /// </summary>
-    /// <param name="originalPrice">Giá ban đầu (>= 0)</param>
-    /// <param name="discountPercentage">Phần trăm giảm giá (0.0 đến 1.0)</param>
-    /// <returns>Giá sau giảm</returns>
+    /// <param name="originalPrice">Original price (>= 0)</param>
+    /// <param name="discountPercentage">Discount percentage (0.0 to 1.0)</param>
+    /// <returns>Price after discount</returns>
     /// <exception cref="ArgumentOutOfRangeException"></exception>
     public decimal Calculate(decimal originalPrice, decimal discountPercentage)
     {
@@ -30,12 +30,12 @@ public class PriceCalculator
     }
 
     /// <summary>
-    /// Tính thuế.
+    /// Calculates the final price with tax applied after discount.
     /// </summary>
-    /// <param name="originalPrice">Giá ban đầu (>= 0)</param>
-    /// <param name="discountPercentage">Phần trăm giảm giá (0.0 đến 1.0)</param>
-    /// <param name="taxRate">Thuế suất (0.0 đến 0.5)</param>
-    /// <returns>Giá sau giảm</returns>
+    /// <param name="originalPrice">Original price (>= 0)</param>
+    /// <param name="discountPercentage">Discount percentage (0.0 to 1.0)</param>
+    /// <param name="taxRate">Tax rate (0.0 to 0.5)</param>
+    /// <returns>Price after discount and tax</returns>
     /// <exception cref="ArgumentOutOfRangeException"></exception>
     public decimal CalculateWithTax(decimal originalPrice, decimal discountPercentage, decimal taxRate)
     {

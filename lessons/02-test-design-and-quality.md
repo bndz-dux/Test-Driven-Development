@@ -1,78 +1,79 @@
-# Lesson 02: Thiết kế Test & Đo lường chất lượng Test (Test Design & Quality)
+# Lesson 02: Test Design & Test Quality
 
-## 🎯 Mục tiêu bài học
-- Học cách **test theo hành vi nghiệp vụ (business behavior)** thay vì kiểm tra chi tiết cài đặt nội bộ (implementation details).
-- Nắm vững 2 kỹ thuật thiết kế test kinh điển trong Software Testing:
-  1. **Phân vùng tương đương (Equivalence Partitioning - EP)**
-  2. **Phân tích giá trị biên (Boundary Value Analysis - BVA)**
-- Kiểm thử toàn diện: Happy Path, Failure Path, Null/Empty/Whitespace, Out-of-range, Exceptions.
-- Tránh các bài test "giòn dễ vỡ" (brittle tests) khi refactor mã nguồn.
-- **Thực hành:** Thiết kế bộ kiểm thử chất lượng cao cho `CustomerAgeValidator` và `DiscountPolicy`.
-
----
-
-## 📖 1. Kiểm thử Hành vi vs Chi tiết cài đặt
-
-### ❌ Sai lầm phổ biến: Test chi tiết cài đặt (Implementation Details)
-Khi viết test gắn chặt với cách viết code bên trong (ví dụ kiểm tra xem biến private có tên gì, danh sách nội bộ có gọi hàm `Sort()` hay không):
-- Mỗi lần bạn refactor thuật toán để tối ưu tốc độ, test sẽ bị vỡ dù chức năng vẫn chạy đúng 100%.
-- Lập trình viên sẽ sợ refactor code vì mỗi lần sửa là hàng loạt test báo đỏ.
-
-### ✅ Nguyên tắc: Test hành vi bên ngoài (Observable Behavior)
-- Coi module/class như một **hộp đen (black box)** hoặc hệ thống phản hồi:
-  - **Đầu vào (Inputs / State):** Dữ liệu truyền vào hàm hoặc cấu hình ban đầu.
-  - **Đầu ra (Outputs / Observable State):** Giá trị trả về, exception được ném ra, hoặc thay đổi trạng thái có thể quan sát được.
+## 🎯 Lesson Objectives
+- Learn to test for **business behavior** rather than internal implementation details.
+- Master two classical test design techniques in Software Engineering:
+  1. **Equivalence Partitioning (EP)**
+  2. **Boundary Value Analysis (BVA)**
+- Perform comprehensive testing: Happy Path, Failure Path, Null/Empty/Whitespace inputs, Out-of-range values, and Exceptions.
+- Prevent brittle tests that break upon routine refactoring.
+- **Hands-on:** Design a high-quality test suite for `CustomerEligibilityValidator`.
 
 ---
 
-## 🔬 2. Kỹ thuật Phân vùng tương đương (EP) & Giá trị biên (BVA)
+## 📖 1. Testing Behavior vs. Implementation Details
 
-### 2.1. Phân vùng tương đương (Equivalence Partitioning)
-Chia tập hợp dữ liệu đầu vào thành các nhóm (partitions) mà hệ thống xử lý **như nhau**. Ta chỉ cần chọn **1 đại diện** cho mỗi nhóm để test, tránh viết hàng trăm test trùng lặp vô nghĩa.
+### ❌ Common Pitfall: Testing Implementation Details
+When tests are tightly coupled to internal implementation details (e.g., verifying private variable names, checking whether a private helper method was invoked, or verifying specific internal list sorting calls):
+- Routine code refactoring to optimize performance causes test failures despite functional correctness.
+- Developers become reluctant to refactor code because any change breaks numerous fragile tests.
 
-**Ví dụ:** Quy tắc độ tuổi mua bảo hiểm:
-- Hợp lệ: Từ 18 đến 65 tuổi.
-- Không hợp lệ (quá trẻ): < 18 tuổi.
-- Không hợp lệ (quá già): > 65 tuổi.
+### ✅ Best Practice: Testing Observable Behavior
+- Treat the module/class as a **black box** or deterministic system:
+  - **Inputs / Initial State:** Arguments passed to methods or initial object state.
+  - **Outputs / Observable State Mutations:** Return values, thrown exceptions, or verifiable state changes.
 
-Ta có 3 phân vùng:
-1. `[-∞, 17]`: Không hợp lệ (Đại diện: `15`)
-2. `[18, 65]`: Hợp lệ (Đại diện: `30`)
-3. `[66, +∞]`: Không hợp lệ (Đại diện: `70`)
+---
 
-### 2.2. Phân tích giá trị biên (Boundary Value Analysis)
-Lỗi lập trình (bugs) hầu hết luôn xảy ra tại các **điểm biên** (do nhầm lẫn giữa `>`, `>=`, `<`, `<=`).
-Quy tắc 3 điểm biên (On, Off, In-between):
-- Với điều kiện `age >= 18`:
-  - **17** (Off-boundary: Ngay sát dưới biên → False)
-  - **18** (On-boundary: Ngay tại biên → True)
-  - **19** (In-boundary: Ngay sát trên biên → True)
+## 🔬 2. Equivalence Partitioning (EP) & Boundary Value Analysis (BVA)
 
-### Bảng các loại giá trị biên phổ biến cần luôn luôn test:
+### 2.1. Equivalence Partitioning (EP)
+Divide the entire domain of input values into partitions where the system exhibits identical behavior. Selecting **one representative value** from each partition is sufficient to validate that partition, avoiding redundant tests.
 
-| Kiểu dữ liệu | Các trường hợp biên cần kiểm tra |
+**Example:** Insurance eligibility age rule:
+- Eligible: Between 18 and 65 years old.
+- Ineligible (too young): < 18 years old.
+- Ineligible (too old): > 65 years old.
+
+We identify three distinct partitions:
+1. `[-∞, 17]`: Ineligible (Representative: `15`)
+2. `[18, 65]`: Eligible (Representative: `30`)
+3. `[66, +∞]`: Ineligible (Representative: `70`)
+
+### 2.2. Boundary Value Analysis (BVA)
+Defects cluster disproportionately around **boundary points** (often caused by off-by-one errors or mixing up `>`, `>=`, `<`, `<=`).
+
+The 3-point boundary model (Off-boundary, On-boundary, In-boundary):
+- For condition `age >= 18`:
+  - **17** (Off-boundary: Just below threshold → False)
+  - **18** (On-boundary: Exactly on threshold → True)
+  - **19** (In-boundary: Just above threshold → True)
+
+### Common Boundary Matrix:
+
+| Data Type | Boundary Scenarios to Test |
 | :--- | :--- |
-| **Số (int, decimal)** | `0`, `1`, `-1`, `Min`, `Max`, giá trị ngay trước/sau ngưỡng điều kiện (`if x > 100` -> test `99`, `100`, `101`) |
-| **Chuỗi (string)** | `null`, `""` (empty), `" "` (whitespace), `"  \t\n  "`, chuỗi 1 ký tự, chuỗi có độ dài tối đa cho phép, chuỗi vượt quá độ dài |
-| **Danh sách (Collection)** | `null`, rỗng (`Count = 0`), 1 phần tử, nhiều phần tử, phần tử trùng lặp (duplicates) |
-| **Thời gian (DateTime)** | Quá khứ, hiện tại, tương lai, giao thừa năm nhuận, lệch múi giờ (UTC vs Local) |
+| **Numbers (int, decimal)** | `0`, `1`, `-1`, `Min`, `Max`, values immediately before/after threshold conditions (`if x > 100` -> test `99`, `100`, `101`) |
+| **Strings (string)** | `null`, `""` (empty), `" "` (whitespace), `"  \t\n  "`, 1-character strings, maximum length strings, strings exceeding length |
+| **Collections (IEnumerable)** | `null`, empty (`Count = 0`), 1 element, multiple elements, duplicate items |
+| **Time (DateTime)** | Past, present, future, leap year leap days, timezone offsets (UTC vs. Local) |
 
 ---
 
-## 🛠️ 3. Thực hành Step-by-Step: Xây dựng & Kiểm thử `InsuranceEligibilityValidator`
+## 🛠️ 3. Step-by-Step Exercise: `CustomerEligibilityValidator`
 
-Chúng ta cùng xây dựng một bộ xác thực tính hợp lệ của khách hàng tham gia bảo hiểm.
+We will build an eligibility validator for prospective insurance applicants.
 
-### Yêu cầu nghiệp vụ (Business Requirements):
-1. **Tên khách hàng:** Không được null, rỗng hoặc chỉ toàn khoảng trắng. Độ dài từ 2 đến 100 ký tự.
-2. **Tuổi khách hàng:** Phải từ đủ 18 đến 65 tuổi (tính đến ngày sinh nhật).
-3. **Mã bưu điện (ZipCode):** Phải đúng định dạng 5 chữ số (ví dụ: `"70000"`).
+### Business Requirements:
+1. **Full Name:** Cannot be null, empty, or whitespace-only. Length must be between 2 and 100 characters.
+2. **Applicant Age:** Must be between 18 and 65 years old (inclusive).
+3. **Postal Code (ZipCode):** Must match a 5-digit numerical format (e.g., `"70000"`).
 
 ---
 
-### Bước 3.1: Viết Model và Validator trong Domain
+### Step 3.1: Implement Domain Models and Validator
 
-Tạo file `src/InsuranceQuoteEngine/Domain/CustomerEligibilityValidator.cs`:
+Create file `src/InsuranceQuoteEngine/Domain/Services/CustomerEligibilityValidator.cs`:
 
 ```csharp
 using System.Text.RegularExpressions;
@@ -91,7 +92,7 @@ public class CustomerEligibilityValidator
 
         var errors = new List<string>();
 
-        // 1. Kiểm tra họ tên
+        // 1. Validate full name
         if (string.IsNullOrWhiteSpace(applicant.FullName))
         {
             errors.Add("Full name is required.");
@@ -101,7 +102,7 @@ public class CustomerEligibilityValidator
             errors.Add("Full name must be between 2 and 100 characters.");
         }
 
-        // 2. Kiểm tra độ tuổi (18 - 65)
+        // 2. Validate age (18 - 65)
         if (applicant.Age < 18)
         {
             errors.Add("Applicant must be at least 18 years old.");
@@ -111,7 +112,7 @@ public class CustomerEligibilityValidator
             errors.Add("Applicant cannot be older than 65 years old.");
         }
 
-        // 3. Kiểm tra PostalCode
+        // 3. Validate postal code
         if (string.IsNullOrWhiteSpace(applicant.PostalCode) || !PostalCodeRegex.IsMatch(applicant.PostalCode))
         {
             errors.Add("Postal code must be exactly 5 digits.");
@@ -140,41 +141,41 @@ public class ValidationResult
 
 ---
 
-### Bước 3.2: Thiết kế Ma trận Test Cases bài bản
+### Step 3.2: Design the Test Matrix
 
-Trước khi gõ code test, hãy liệt kê các test cases theo nguyên tắc EP và BVA:
+Before writing tests, map out test scenarios using EP and BVA principles:
 
 1. **Happy Path:**
-   - Khách hàng chuẩn (Tên hợp lệ, Tuổi 30, PostalCode "70000") → IsValid = true, không có lỗi.
-2. **Biên độ tuổi (BVA):**
-   - 17 tuổi (dưới biên) → Fail ("Applicant must be at least 18 years old.")
-   - 18 tuổi (tại biên dưới) → Pass
-   - 19 tuổi (trên biên dưới) → Pass
-   - 64 tuổi (dưới biên trên) → Pass
-   - 65 tuổi (tại biên trên) → Pass
-   - 66 tuổi (vượt biên trên) → Fail ("Applicant cannot be older than 65 years old.")
-3. **Biên chuỗi họ tên (String & Length BVA):**
-   - null → Fail
+   - Standard valid applicant (Name: "Nguyen Van A", Age: 30, PostalCode: "70000") → IsValid = true, no errors.
+2. **Age Boundaries (BVA):**
+   - Age 17 (below lower bound) → Fail ("Applicant must be at least 18 years old.")
+   - Age 18 (on lower bound) → Pass
+   - Age 19 (above lower bound) → Pass
+   - Age 64 (below upper bound) → Pass
+   - Age 65 (on upper bound) → Pass
+   - Age 66 (above upper bound) → Fail ("Applicant cannot be older than 65 years old.")
+3. **Name Boundaries (String & Length BVA):**
+   - `null` → Fail
    - `""` → Fail
    - `"   "` → Fail
-   - 1 ký tự (`"A"`) → Fail
-   - 2 ký tự (`"An"`) → Pass
-   - 100 ký tự → Pass
-   - 101 ký tự → Fail
-4. **Biên mã bưu điện (ZipCode):**
-   - 4 chữ số (`"1234"`) → Fail
-   - 5 chữ số (`"12345"`) → Pass
-   - 6 chữ số (`"123456"`) → Fail
-   - Chứa chữ cái (`"7000A"`) → Fail
-   - Null hoặc khoảng trắng → Fail
-5. **Ngoại lệ:**
-   - Truyền `applicant = null` → Throw `ArgumentNullException`.
+   - 1 character (`"A"`) → Fail
+   - 2 characters (`"An"`) → Pass
+   - 100 characters → Pass
+   - 101 characters → Fail
+4. **Postal Code Format:**
+   - 4 digits (`"1234"`) → Fail
+   - 5 digits (`"12345"`) → Pass
+   - 6 digits (`"123456"`) → Fail
+   - Contains letters (`"7000A"`) → Fail
+   - Null or whitespace → Fail
+5. **Guard Clauses / Exceptions:**
+   - Passing `applicant = null` → Throws `ArgumentNullException`.
 
 ---
 
-### Bước 3.3: Viết bộ Unit Tests hoàn chỉnh với FluentAssertions
+### Step 3.3: Write the Complete Test Suite
 
-Tạo file `tests/InsuranceQuoteEngine.UnitTests/Domain/CustomerEligibilityValidatorTests.cs`:
+Create file `tests/InsuranceQuoteEngine.UnitTests/Domain/CustomerEligibilityValidatorTests.cs`:
 
 ```csharp
 using FluentAssertions;
@@ -393,21 +394,21 @@ public class CustomerEligibilityValidatorTests
 
 ---
 
-## 📝 4. 5 câu hỏi tự vấn khi thiết kế Test (Check-list tư duy)
+## 📝 4. 5 Essential Questions for Designing Test Cases
 
-Khi viết test cho bất kỳ method nghiệp vụ nào, hãy luôn đặt 5 câu hỏi:
-1. **Happy Path:** Dữ liệu chuẩn mực nhất sẽ trả về kết quả gì?
-2. **What Can Go Wrong (Failure Path):** Người dùng nhập sai cái gì, hệ thống báo lỗi ra sao?
-3. **Boundaries:** Có điều kiện `>=`, `<=`, `Length`, `Count` nào không? Đã test các giá trị biên `n - 1`, `n`, `n + 1` chưa?
-4. **Invalid / Extreme Inputs:** Đã thử với `null`, `""`, số âm, danh sách rỗng, ngày trong quá khứ chưa?
-5. **Business Invariants:** Quy tắc bất biến nào của hệ thống không bao giờ được phép vi phạm?
+Whenever designing tests for a business method, ask these five questions:
+1. **Happy Path:** What is the outcome for pristine, standard valid inputs?
+2. **What Can Go Wrong (Failure Path):** What happens when users provide invalid data or operations fail?
+3. **Boundaries:** Are there `>=`, `<=`, `Length`, or `Count` constraints? Have you tested `n - 1`, `n`, and `n + 1`?
+4. **Invalid / Extreme Inputs:** Have you tested `null`, `""`, negative numbers, empty collections, or past/future timestamps?
+5. **Business Invariants:** What core business rule must never be violated under any circumstance?
 
 ---
 
-## ✅ Check-list hoàn thành Lesson 02
-- [ ] Phân biệt được Test hành vi (Behavior) và Test chi tiết cài đặt (Implementation details).
-- [ ] Thành thạo vẽ phân vùng tương đương (EP) và phân tích các điểm biên (BVA).
-- [ ] Viết đầy đủ các case cho String (null, empty, whitespace, min/max length).
-- [ ] Chạy thành công toàn bộ test suite của `CustomerEligibilityValidator`.
+## ✅ Lesson 02 Completion Checklist
+- [ ] Differentiate between behavior-driven testing and implementation testing.
+- [ ] Map out equivalence partitions (EP) and identify boundary values (BVA).
+- [ ] Write boundary cases for string constraints (null, empty, whitespace, min/max length).
+- [ ] Execute and pass the complete test suite for `CustomerEligibilityValidator`.
 
-👉 **Tiếp theo:** Chuyển sang [Lesson 03: Chiến lược Mocking & Cô lập phụ thuộc với Moq](./03-mocking-strategies.md)!
+👉 **Next Step:** Proceed to [Lesson 03: Mocking Strategies & Isolating Dependencies with Moq](./03-mocking-strategies.md)!

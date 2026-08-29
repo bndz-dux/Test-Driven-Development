@@ -1,30 +1,30 @@
 # Unit Testing & Test-Driven Development (TDD) Mastery Course
 
-Chào mừng bạn đến với lộ trình thực hành toàn diện về **Unit Testing** và **Test-Driven Development (TDD)** trên nền tảng **.NET / C#**. 
+Welcome to the comprehensive hands-on roadmap for **Unit Testing** and **Test-Driven Development (TDD)** on the **.NET / C#** platform.
 
-Bộ tài liệu này được chia nhỏ từ kế hoạch tổng thể thành **12 bài học chi tiết (Step-by-Step Lessons)**, đi từ nền tảng cơ bản nhất cho đến các kỹ thuật nâng cao, TDD thực chiến trên dự án Domain thực tế, Mutation Testing, Code Coverage, và thiết lập CI/CD Quality Gates.
-
----
-
-## 🎯 Mục tiêu đầu ra (Learning Outcomes)
-
-Sau khi hoàn thành toàn bộ lộ trình này, bạn sẽ làm chủ:
-- [x] Tư duy viết Unit Test xoay quanh **hành vi (behavior)** và **quy tắc nghiệp vụ (business rules)** thay vì chi tiết cài đặt.
-- [x] Áp dụng chuẩn chỉ mô hình **Arrange – Act – Assert (AAA)** và quy chuẩn đặt tên test rõ ràng.
-- [x] Sử dụng thành thạo **xUnit**, **FluentAssertions**, và **Moq** (tránh over-mocking).
-- [x] Xây dựng và tái sử dụng **Test Data Builders** để giữ test code luôn gọn gàng, dễ bảo trì.
-- [x] Nhuần nhuyễn vòng lặp **RED → GREEN → REFACTOR** của TDD trên các tính năng thực tế.
-- [x] Kiểm thử tự tin các tình huống phức tạp: Async, Exceptions, Time-dependent (`TimeProvider`/`IClock`), Boundary, Edge cases.
-- [x] Sử dụng **Mutation Testing (Stryker.NET)** để đo lường độ nhạy thực sự của test suite.
-- [x] Đo lường và thiết lập ngưỡng **Code Coverage (Coverlet & ReportGenerator)**.
-- [x] Tích hợp **Quality Gates tự động trên CI/CD** (GitHub Actions / Azure DevOps).
-- [x] Nhận diện và Refactor các **Test Smells** nguy hiểm.
+This curriculum is structured into **12 detailed, step-by-step lessons**, guiding you from fundamental testing principles to advanced mocking, practical TDD on real-world domain architectures, Mutation Testing, Code Coverage analysis, and CI/CD Quality Gates.
 
 ---
 
-## 🛠️ Công nghệ & Công cụ sử dụng
+## 🎯 Outcomes
 
-- **Ngôn ngữ / Runtime:** .NET 8 / C# 12 (hoặc .NET 9)
+Upon completing this curriculum, you will master:
+- [x] Designing unit tests around **observable behavior** and **business rules** rather than implementation details.
+- [x] Consistently applying the **Arrange – Act – Assert (AAA)** pattern and clean test naming conventions.
+- [x] Proficiently utilizing **xUnit**, **FluentAssertions**, and **Moq** (while avoiding over-mocking).
+- [x] Designing and reusing **Test Data Builders** to keep test suites clean and maintainable.
+- [x] Mastering the **RED → GREEN → REFACTOR** cycle across realistic domain features.
+- [x] Confidently testing complex scenarios: asynchronous operations, exceptions, time dependencies (`TimeProvider` / `IClock`), boundary conditions, and edge cases.
+- [x] Measuring true test effectiveness using **Mutation Testing (Stryker.NET)**.
+- [x] Measuring, analyzing, and enforcing **Code Coverage thresholds (Coverlet & ReportGenerator)**.
+- [x] Setting up **Automated Quality Gates** in CI/CD pipelines (GitHub Actions / Azure DevOps).
+- [x] Detecting, analyzing, and refactoring dangerous **Test Smells**.
+
+---
+
+## 🛠️ Technology Stack & Tools
+
+- **Language / Runtime:** .NET 8 / C# 12 (or .NET 9)
 - **Test Framework:** xUnit
 - **Assertion Library:** FluentAssertions
 - **Mocking Framework:** Moq
@@ -34,42 +34,31 @@ Sau khi hoàn thành toàn bộ lộ trình này, bạn sẽ làm chủ:
 
 ---
 
-## 📚 Danh mục bài học (Lesson Index)
+## 📚 Guidance
 
-| Bài học | Chủ đề | Mô tả tóm tắt | Link |
+| Lesson | Topic | Summary | Link |
 | :--- | :--- | :--- | :--- |
-| **Lesson 00** | **Environment & Project Setup** | Khởi tạo Solution, cấu trúc thư mục chuẩn Domain/Tests, cài đặt các packages cần thiết | [Xem bài học](./lessons/00-introduction-and-setup.md) |
-| **Lesson 01** | **Unit Testing Fundamentals** | Khái niệm Unit, mô hình AAA, quy ước đặt tên, `[Fact]`, FluentAssertions, bài tập `PriceCalculator` | [Xem bài học](./lessons/01-unit-testing-fundamentals.md) |
-| **Lesson 02** | **Test Design & Test Quality** | Phân tích phân vùng tương đương (EP), phân tích giá trị biên (BVA), Happy/Failure path, kiểm thử Exception | [Xem bài học](./lessons/02-test-design-and-quality.md) |
-| **Lesson 03** | **Mocking Strategies with Moq** | Stub vs Mock, cô lập phụ thuộc, Setup, Verify, Async Mocking, tránh Over-Mocking với `OrderService` | [Xem bài học](./lessons/03-mocking-strategies.md) |
-| **Lesson 04** | **Test Data Builders & Fixtures** | Giải quyết vấn đề Object Mother / Test Clutter bằng Pattern Builder, chia sẻ Fixtures | [Xem bài học](./lessons/04-test-data-builders.md) |
-| **Lesson 05** | **TDD Core Workflow (Red-Green-Refactor)** | 3 định luật TDD, quy trình TDD từng bước, thực hành xây dựng Order & Discount Engine hoàn toàn Test-First | [Xem bài học](./lessons/05-tdd-core-workflow.md) |
-| **Lesson 06** | **Advanced Unit Testing Techniques** | Parameterized Tests (`[Theory]`, `[InlineData]`, `[MemberData]`, `[ClassData]`), xử lý thời gian (`IClock`/`TimeProvider`) | [Xem bài học](./lessons/06-advanced-unit-testing.md) |
-| **Lesson 07** | **Capstone Project: Insurance Quote Engine** | Thực chiến TDD xây dựng hệ thống tính phí bảo hiểm hoàn chỉnh: Risk, Premium, Discounts, Referral/Decline | [Xem bài học](./lessons/07-insurance-quote-engine-capstone.md) |
-| **Lesson 08** | **Mutation Testing with Stryker.NET** | Khái niệm Mutants, Mutant Killed vs Survived, cấu hình Stryker.NET, phân tích báo cáo và diệt mutants | [Xem bài học](./lessons/08-mutation-testing-stryker.md) |
-| **Lesson 09** | **Code Coverage (Coverlet & ReportGenerator)** | Line / Branch / Method coverage, xuất file `coverage.cobertura.xml`, tạo HTML Report trực quan | [Xem bài học](./lessons/09-code-coverage-coverlet.md) |
-| **Lesson 10** | **Automated CI Quality Gates** | Tích hợp Build, Test, Coverage Gate (>=80%), Stryker Gate vào GitHub Actions / Azure DevOps | [Xem bài học](./lessons/10-ci-quality-gates.md) |
-| **Lesson 11** | **Test Smells & Test Refactoring** | Nhận diện 10 Test Smells thường gặp (Flaky, Fragile, Mystery Guest...) và hướng dẫn Refactor từng case | [Xem bài học](./lessons/11-test-refactoring-and-smells.md) |
+| **Lesson 00** | **Environment & Project Setup** | Initialize solution, establish Domain/Tests folder structure, configure essential packages | [View Lesson](./lessons/00-introduction-and-setup.md) |
+| **Lesson 01** | **Unit Testing Fundamentals** | Unit testing concepts, AAA pattern, naming conventions, `[Fact]`, FluentAssertions, `PriceCalculator` exercise | [View Lesson](./lessons/01-unit-testing-fundamentals.md) |
+| **Lesson 02** | **Test Design & Test Quality** | Equivalence Partitioning (EP), Boundary Value Analysis (BVA), Happy/Failure paths, Exception testing | [View Lesson](./lessons/02-test-design-and-quality.md) |
+| **Lesson 03** | **Mocking Strategies with Moq** | Stubs vs Mocks, dependency isolation, Setup, Verify, Async Mocking, avoiding Over-Mocking with `OrderService` | [View Lesson](./lessons/03-mocking-strategies.md) |
+| **Lesson 04** | **Test Data Builders & Fixtures** | Overcoming Object Mother & Test Clutter with the Builder Pattern, sharing fixtures | [View Lesson](./lessons/04-test-data-builders.md) |
+| **Lesson 05** | **TDD Core Workflow (Red-Green-Refactor)** | Three Laws of TDD, step-by-step TDD cycle, building an Order & Discount Engine test-first | [View Lesson](./lessons/05-tdd-core-workflow.md) |
+| **Lesson 06** | **Advanced Unit Testing Techniques** | Parameterized tests (`[Theory]`, `[InlineData]`, `[MemberData]`, `[ClassData]`), handling time (`IClock`/`TimeProvider`) | [View Lesson](./lessons/06-advanced-unit-testing.md) |
+| **Lesson 07** | **Capstone Project: Insurance Quote Engine** | Practical TDD building a full-fledged insurance quoting engine: Risk, Premium, Discounts, Referral/Decline | [View Lesson](./lessons/07-insurance-quote-engine-capstone.md) |
+| **Lesson 08** | **Mutation Testing with Stryker.NET** | Mutants, Mutant Killed vs Survived, Stryker.NET configuration, report analysis, and killing surviving mutants | [View Lesson](./lessons/08-mutation-testing-stryker.md) |
+| **Lesson 09** | **Code Coverage (Coverlet & ReportGenerator)** | Line / Branch / Method coverage metrics, generating `coverage.cobertura.xml`, HTML report visualization | [View Lesson](./lessons/09-code-coverage-coverlet.md) |
+| **Lesson 10** | **Automated CI Quality Gates** | Integrating Build, Test, Coverage Gate (>=80%), and Stryker Gate into GitHub Actions / Azure DevOps | [View Lesson](./lessons/10-ci-quality-gates.md) |
+| **Lesson 11** | **Test Smells & Test Refactoring** | Identifying 10 common test smells (Flaky, Fragile, Mystery Guest, etc.) with actionable refactoring recipes | [View Lesson](./lessons/11-test-refactoring-and-smells.md) |
 
 ---
 
-## 📅 Lộ trình học đề xuất theo tuần (6-Week Roadmap)
+## 🏁 Definition of Done
 
-- **Tuần 1 (Nền tảng):** Lesson 00, 01, 02 (Viết 30–40 unit tests chất lượng với AAA và Boundary Analysis).
-- **Tuần 2 (Cô lập & Mocking):** Lesson 03, 04 (Làm chủ Moq và xây dựng thư viện Test Data Builder tái sử dụng).
-- **Tuần 3 (Tư duy TDD):** Lesson 05, 06 (Luyện tập phản xạ RED → GREEN → REFACTOR và xử lý kịch bản nâng cao: Time/Theories).
-- **Tuần 4 (Dự án thực chiến Capstone):** Lesson 07 (Phát triển hoàn chỉnh `InsuranceQuoteEngine` thuần TDD).
-- **Tuần 5 (Đo lường chất lượng & Đột biến):** Lesson 08, 09 (Thực hiện Mutation Testing và phân tích Code Coverage).
-- **Tuần 6 (CI Quality Gates & Refactoring):** Lesson 10, 11 (Tự động hóa trên CI Pipeline và chuẩn hóa toàn bộ Test Suite).
-
----
-
-## 🏁 Tiêu chuẩn hoàn thành (Definition of Done)
-
-Một lập trình viên làm chủ TDD khi nhận một yêu cầu nghiệp vụ mới:
-1. Phân tích requirement thành các business rules & acceptance criteria.
-2. Thiết kế test cases (Happy path, Edge cases, Failure path).
-3. Viết Test đỏ (RED) → Viết code tối thiểu (GREEN) → Tối ưu hóa (REFACTOR).
-4. Đảm bảo toàn bộ test suite xanh, deterministic (không flaky), chạy nhanh (< vài giây).
-5. Kiểm tra Code Coverage (Line >= 80%, Branch >= 75%) và Mutation Score (>= 80%).
-6. Push PR và tự tin vượt qua toàn bộ Automated Quality Gates trên CI!
+A developer has mastered TDD when receiving a new business requirement and reliably:
+1. Decomposing the requirement into business rules and acceptance criteria.
+2. Designing comprehensive test cases (Happy path, Edge cases, Failure path).
+3. Writing a failing test (RED) → Writing minimal production code (GREEN) → Optimizing design (REFACTOR).
+4. Ensuring the entire test suite is green, deterministic (zero flakiness), and executes quickly (< few seconds).
+5. Validating Code Coverage (Line >= 80%, Branch >= 75%) and Mutation Score (>= 80%).
+6. Opening a Pull Request and confidently passing all Automated Quality Gates in CI!

@@ -1,7 +1,7 @@
 namespace InsuranceQuoteEngine.UnitTests.Fixtures;
 
 /// <summary>
-/// Fixture dùng chung cho các test suite cần khởi tạo tài nguyên nặng một lần duy nhất (Database in-memory, Serializer configs, v.v.).
+/// Shared fixture for test suites requiring expensive one-time resource initialization (in-memory database, serializer configs, etc.).
 /// </summary>
 public class SharedEngineFixture : IDisposable
 {
@@ -11,7 +11,7 @@ public class SharedEngineFixture : IDisposable
 
     public SharedEngineFixture()
     {
-        // Giả lập khởi tạo tài nguyên tốn kém 1 lần duy nhất cho toàn bộ test class
+        // Simulate expensive one-time setup for the entire test class
         InitializedAtUtc = DateTime.UtcNow;
         EnvironmentName = "TestEnvironment_Isolated";
         IsDisposed = false;
@@ -19,7 +19,7 @@ public class SharedEngineFixture : IDisposable
 
     public void Dispose()
     {
-        // Dọn dẹp tài nguyên khi tất cả các test trong class kết thúc
+        // Clean up resources after all tests in the class have finished
         IsDisposed = true;
         GC.SuppressFinalize(this);
     }

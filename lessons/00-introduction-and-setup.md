@@ -1,32 +1,32 @@
-# Lesson 00: Thiết lập môi trường & Cấu trúc dự án chuẩn
+# Lesson 00: Environment Setup & Project Structure
 
-## 🎯 Mục tiêu bài học
-- Cài đặt và chuẩn bị môi trường phát triển (.NET SDK, IDE/Editor).
-- Khởi tạo Solution và phân chia cấu trúc thư mục chuẩn giữa `src/` (mã nguồn ứng dụng) và `tests/` (mã nguồn kiểm thử).
-- Cài đặt các thư viện kiểm thử chuẩn mực: **xUnit**, **FluentAssertions**, **Moq**, **Coverlet**.
-- Chạy thử nghiệm lệnh kiểm thử đầu tiên qua .NET CLI.
+## 🎯 Lesson Objectives
+- Install and prepare the development environment (.NET SDK, IDE/Editor).
+- Initialize the Solution and establish a standard folder structure separating `src/` (application source code) and `tests/` (test source code).
+- Install industry-standard testing libraries: **xUnit**, **FluentAssertions**, **Moq**, and **Coverlet**.
+- Execute the first test suite run using the .NET CLI.
 
 ---
 
-## 📋 1. Chuẩn bị môi trường (Prerequisites)
+## 📋 1. Prerequisites
 
-1. **.NET SDK:** Phiên bản .NET 8.0 hoặc mới hơn.
-   - Kiểm tra bằng lệnh:
+1. **.NET SDK:** Version .NET 8.0 or newer.
+   - Verify installation with:
      ```bash
      dotnet --version
      ```
 2. **IDE / Code Editor:**
-   - Visual Studio 2022 (với workload ".NET desktop" hoặc "ASP.NET and web development"), hoặc
-   - JetBrains Rider, hoặc
-   - Visual Studio Code với các extension:
-     - *C# Dev Kit* hoặc *OmniSharp*
+   - Visual Studio 2022 (with ".NET desktop" or "ASP.NET and web development" workload), or
+   - JetBrains Rider, or
+   - Visual Studio Code with extensions:
+     - *C# Dev Kit* or *OmniSharp*
      - *.NET Core Test Explorer*
 
 ---
 
-## 🏗️ 2. Cấu trúc thư mục mục tiêu
+## 🏗️ 2. Target Directory Structure
 
-Chúng ta sẽ xây dựng cấu trúc dự án mẫu có tên `InsuranceQuoteEngine` (sẽ dùng xuyên suốt khóa học):
+We will build a reference project named `InsuranceQuoteEngine` (used throughout the entire course):
 
 ```text
 TDD/
@@ -55,55 +55,55 @@ TDD/
 
 ---
 
-## 🚀 3. Hướng dẫn Step-by-Step tạo Solution & Projects
+## 🚀 3. Step-by-Step Solution & Project Setup Guide
 
-Mở Terminal tại thư mục gốc của dự án (`d:/LEARN BY MYSELF/TDD`) và thực hiện lần lượt các bước sau:
+Open your terminal at the root project directory (`d:/LEARN BY MYSELF/TDD`) and run the following commands in order:
 
-### Bước 3.1: Khởi tạo Solution File
+### Step 3.1: Initialize the Solution File
 ```bash
 dotnet new sln -n InsuranceQuoteEngine
 ```
 
-### Bước 3.2: Tạo Project mã nguồn (Class Library)
+### Step 3.2: Create the Source Class Library Project
 ```bash
 dotnet new classlib -o src/InsuranceQuoteEngine -n InsuranceQuoteEngine -f net8.0
 ```
 
-### Bước 3.3: Tạo Project Unit Tests (xUnit)
+### Step 3.3: Create the xUnit Test Project
 ```bash
 dotnet new xunit -o tests/InsuranceQuoteEngine.UnitTests -n InsuranceQuoteEngine.UnitTests -f net8.0
 ```
 
-### Bước 3.4: Thêm các Projects vào Solution
+### Step 3.4: Add Projects to the Solution
 ```bash
 dotnet sln add src/InsuranceQuoteEngine/InsuranceQuoteEngine.csproj
 dotnet sln add tests/InsuranceQuoteEngine.UnitTests/InsuranceQuoteEngine.UnitTests.csproj
 ```
 
-### Bước 3.5: Tham chiếu Project Unit Tests sang Project mã nguồn
-Để dự án Unit Test có thể gọi và kiểm thử các class trong `InsuranceQuoteEngine`:
+### Step 3.5: Reference the Source Project from the Test Project
+To allow the test project to invoke and verify types in `InsuranceQuoteEngine`:
 ```bash
 dotnet add tests/InsuranceQuoteEngine.UnitTests/InsuranceQuoteEngine.UnitTests.csproj reference src/InsuranceQuoteEngine/InsuranceQuoteEngine.csproj
 ```
 
 ---
 
-## 📦 4. Cài đặt các thư viện hỗ trợ Test cần thiết
+## 📦 4. Install Essential Testing Packages
 
-Chuyển vào thư mục test hoặc thêm trực tiếp các package thiết yếu:
+Add the required testing packages to the test project:
 
 ```bash
-# 1. FluentAssertions: Giúp viết assertion theo phong cách fluent, dễ đọc, báo lỗi chi tiết
+# 1. FluentAssertions: Fluent, highly readable assertion style with rich failure messages
 dotnet add tests/InsuranceQuoteEngine.UnitTests package FluentAssertions
 
-# 2. Moq: Thư viện tạo Mock/Stub mạnh mẽ và phổ biến nhất trong .NET
+# 2. Moq: Powerful and popular mocking framework for .NET
 dotnet add tests/InsuranceQuoteEngine.UnitTests package Moq
 
-# 3. Coverlet Collector: Hỗ trợ đo lường Code Coverage
+# 3. Coverlet Collector: Cross-platform code coverage collection
 dotnet add tests/InsuranceQuoteEngine.UnitTests package coverlet.collector
 ```
 
-Kiểm tra file `tests/InsuranceQuoteEngine.UnitTests/InsuranceQuoteEngine.UnitTests.csproj` sẽ có nội dung tương tự như sau:
+Your `tests/InsuranceQuoteEngine.UnitTests/InsuranceQuoteEngine.UnitTests.csproj` should look similar to:
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
 
@@ -133,11 +133,11 @@ Kiểm tra file `tests/InsuranceQuoteEngine.UnitTests/InsuranceQuoteEngine.UnitT
 
 ---
 
-## 🧪 5. Kiểm tra thiết lập bằng Sanity Test
+## 🧪 5. Verify Setup with a Sanity Test
 
-Hãy tạo một test đơn giản để đảm bảo `xUnit` và `FluentAssertions` hoạt động bình thường.
+Create a simple sanity test to verify that `xUnit` and `FluentAssertions` are functioning correctly.
 
-Tạo file `tests/InsuranceQuoteEngine.UnitTests/SanityCheckTests.cs`:
+Create file `tests/InsuranceQuoteEngine.UnitTests/SanityCheckTests.cs`:
 ```csharp
 using FluentAssertions;
 using Xunit;
@@ -162,23 +162,23 @@ public class SanityCheckTests
 }
 ```
 
-Chạy lệnh test trên Terminal:
+Run tests from the terminal:
 ```bash
 dotnet test
 ```
 
-**Kết quả mong đợi:**
+**Expected output:**
 ```text
 Passed!  - Failed: 0, Passed: 1, Skipped: 0, Total: 1, Duration: ...ms
 ```
 
 ---
 
-## ✅ Check-list hoàn thành Lesson 00
-- [ ] Đã cài đặt .NET 8 SDK và kiểm tra phiên bản thành công.
-- [ ] Đã tạo Solution `InsuranceQuoteEngine.sln`.
-- [ ] Đã tạo project `InsuranceQuoteEngine` trong `src/` và project `InsuranceQuoteEngine.UnitTests` trong `tests/`.
-- [ ] Đã cài đặt `FluentAssertions`, `Moq`, `coverlet.collector`.
-- [ ] Chạy lệnh `dotnet test` thành công và pass bài test kiểm tra.
+## ✅ Lesson 00 Completion Checklist
+- [ ] Installed .NET 8 SDK and confirmed version.
+- [ ] Created `InsuranceQuoteEngine.sln`.
+- [ ] Created `InsuranceQuoteEngine` project in `src/` and `InsuranceQuoteEngine.UnitTests` in `tests/`.
+- [ ] Installed `FluentAssertions`, `Moq`, and `coverlet.collector`.
+- [ ] Executed `dotnet test` successfully and verified the sanity test passes.
 
-👉 **Tiếp theo:** Chuyển sang [Lesson 01: Unit Testing Fundamentals & xUnit](./01-unit-testing-fundamentals.md) để bắt đầu học viết Unit Test bài bản!
+👉 **Next Step:** Proceed to [Lesson 01: Unit Testing Fundamentals & xUnit](./01-unit-testing-fundamentals.md) to begin writing structured unit tests!

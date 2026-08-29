@@ -14,7 +14,7 @@ public class CustomerEligibilityValidator
 
         var errors = new List<string>();
 
-        // 1. Kiểm tra họ tên
+        // 1. Validate full name
         if (string.IsNullOrWhiteSpace(applicant.FullName))
         {
             errors.Add("Full name is required.");
@@ -24,7 +24,7 @@ public class CustomerEligibilityValidator
             errors.Add("Full name must be between 2 and 100 characters.");
         }
 
-        // 2. Kiểm tra độ tuổi (18 - 65)
+        // 2. Validate age (18 - 65)
         if (applicant.Age < 18)
         {
             errors.Add("Applicant must be at least 18 years old.");
@@ -34,7 +34,7 @@ public class CustomerEligibilityValidator
             errors.Add("Applicant cannot be older than 65 years old.");
         }
 
-        // 3. Kiểm tra PostalCode
+        // 3. Validate postal code
         if (string.IsNullOrWhiteSpace(applicant.PostalCode) || !PostalCodeRegex.IsMatch(applicant.PostalCode))
         {
             errors.Add("Postal code must be exactly 5 digits.");

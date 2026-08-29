@@ -1,20 +1,20 @@
-# Lesson 07: Dự án Capstone Thực Chiến – Insurance Quote Engine
+# Lesson 07: Capstone Project – Insurance Quote Engine
 
-## 🎯 Mục tiêu bài học
-- Tổng hợp toàn bộ kiến thức từ Lesson 01 đến Lesson 06 vào một **dự án Domain thực tế**.
-- Áp dụng phương pháp luận **TDD (Test-Driven Development)** để xây dựng engine tính phí bảo hiểm (`InsuranceQuoteEngine`) từ yêu cầu nghiệp vụ.
-- Thiết kế luồng xử lý hoàn chỉnh theo kiến trúc Domain-Driven:
-  - Xác thực hợp lệ (Eligibility Validation)
-  - Đánh giá rủi ro (Risk Assessment)
-  - Tính phí bảo hiểm gốc (Base Premium Calculation)
-  - Áp dụng gói bảo hiểm (Coverage Multipliers)
-  - Áp dụng chính sách giảm giá (Customer Discounts)
-  - Kiểm tra điều kiện chuyển duyệt thủ công (Referral) hoặc từ chối (Decline)
-- Xuất bản bản báo giá bảo hiểm (`InsuranceQuoteResult`).
+## 🎯 Lesson Objectives
+- Consolidate all concepts from Lessons 01 through 06 into a **realistic domain-driven capstone application**.
+- Apply **Test-Driven Development (TDD)** to architect and implement an underwriting calculation engine (`InsuranceQuoteEngine`) from business specifications.
+- Design an end-to-end domain processing pipeline:
+  - Eligibility and boundary validation
+  - Risk assessment
+  - Base premium calculation
+  - Coverage tier multipliers
+  - Customer discount calculations and claims penalties
+  - Referral and decline rule evaluation
+- Produce immutable quote outcomes (`InsuranceQuoteResult`).
 
 ---
 
-## 🏛️ 1. Kiến trúc luồng xử lý (Quote Processing Pipeline)
+## 🏛️ 1. Quote Processing Pipeline Architecture
 
 ```text
                ┌──────────────────────────────────────────────┐
@@ -51,28 +51,28 @@
 
 ---
 
-## 📜 2. Bảng quy tắc nghiệp vụ chi tiết (Business Rules)
+## 📜 2. Detailed Business Rules
 
-| STT | Quy tắc | Mô tả chi tiết | Kết quả |
+| ID | Rule | Description | Outcome |
 | :--- | :--- | :--- | :--- |
-| **BR-01** | Độ tuổi khách hàng | Tuổi < 18 hoặc > 75 | **DECLINE** (Từ chối) với lý do: *"Customer age is ineligible for insurance."* |
-| **BR-02** | Khu vực lũ lụt | Bất động sản nằm trong khu vực nguy cơ ngập lũ (`IsInFloodZone = true`) | **REFER** (Chuyển chuyên viên duyệt) |
-| **BR-03** | Nhà quá cũ | Năm xây dựng trước 1950 (`YearBuilt < 1950`) | **REFER** (Chuyển chuyên viên duyệt) |
-| **BR-04** | Giá trị nhà tối thiểu | Giá trị ước tính (`EstimatedValue`) < 100,000,000 VND | **DECLINE** với lý do: *"Property value is below insurable limit."* |
-| **BR-05** | Phí cơ sở (Base Rate) | `BasePremium = EstimatedValue * 0.001` (0.1% giá trị nhà) | Số tiền cơ sở |
-| **BR-06** | Gói bảo hiểm (Coverage) | - **Basic:** Nhân hệ số `1.0`<br>- **Standard:** Nhân hệ số `1.25`<br>- **Comprehensive:** Nhân hệ số `1.60` | Phí theo gói |
-| **BR-07** | Chiết khấu khách hàng | - **Normal:** 0%<br>- **Premium:** Giảm 10%<br>- **VIP:** Giảm 20% | Phí cuối cùng (`FinalPremium`) |
-| **BR-08** | Lịch sử bồi thường | Nếu khách hàng có yêu cầu bồi thường trong quá khứ (`HasPastClaims = true`) thì **không được áp dụng giảm giá** | Giữ nguyên phí |
+| **BR-01** | Customer Age Limits | Age < 18 or > 75 | **DECLINE** with reason: *"Customer age is ineligible for insurance. Must be between 18 and 75."* |
+| **BR-02** | Flood Zone Hazard | Property is situated in a designated hazard zone (`IsInFloodZone = true`) | **REFER** (Refer to underwriter) |
+| **BR-03** | Historic Structure Age | Property built prior to 1950 (`YearBuilt < 1950`) | **REFER** (Refer to underwriter) |
+| **BR-04** | Minimum Property Value | Estimated value (`EstimatedValue`) < 100,000,000 VND | **DECLINE** with reason: *"Property value is below insurable limit of 100,000,000 VND."* |
+| **BR-05** | Base Premium Rate | `BasePremium = EstimatedValue * 0.001` (0.1% of property value) | Base amount |
+| **BR-06** | Coverage Tiers | - **Basic:** Multiplier `1.0`<br>- **Standard:** Multiplier `1.25`<br>- **Comprehensive:** Multiplier `1.60` | Tier adjusted premium |
+| **BR-07** | Customer Discounts | - **Normal:** 0%<br>- **Premium:** 10% discount<br>- **VIP:** 20% discount | Discounted premium (`FinalPremium`) |
+| **BR-08** | Claims History Ineligibility | If customer has a prior claim record (`HasPastClaims = true`), **all loyalty discounts are forfeited** | Full undiscounted premium |
 
 ---
 
-## 🛠️ 3. Thực hành TDD Step-by-Step
+## 🛠️ 3. Step-by-Step TDD Implementation
 
-Chúng ta sẽ tạo các Models và viết Engine từng bước theo TDD.
+We will define domain models and drive engine development using TDD.
 
-### Bước 3.1: Tạo Domain Enums & Models
+### Step 3.1: Define Domain Enums & Models
 
-Tạo file `src/InsuranceQuoteEngine/Domain/QuoteDomainModels.cs`:
+Create file `src/InsuranceQuoteEngine/Domain/QuoteDomainModels.cs`:
 
 ```csharp
 namespace InsuranceQuoteEngine.Domain;
@@ -108,9 +108,9 @@ public record QuoteResult(
 
 ---
 
-### Bước 3.2: Viết Test Suite bằng TDD (Từng kịch bản nghiệp vụ)
+### Step 3.2: Write the Test Suite using TDD
 
-Tạo file `tests/InsuranceQuoteEngine.UnitTests/Domain/InsuranceQuoteEngineTests.cs`:
+Create file `tests/InsuranceQuoteEngine.UnitTests/Domain/InsuranceQuoteEngineTests.cs`:
 
 ```csharp
 using FluentAssertions;
@@ -159,7 +159,7 @@ public class InsuranceQuoteEngineTests
     {
         // Arrange
         var customer = new CustomerProfileBuilder().WithAge(30).Build();
-        var property = new PropertyDetailsBuilder().WithEstimatedValue(50_000_000m).Build(); // < 100tr
+        var property = new PropertyDetailsBuilder().WithEstimatedValue(50_000_000m).Build(); // < 100M
         var request = new GenerateQuoteRequest(customer, property, CoverageTier.Basic);
 
         // Act
@@ -167,7 +167,7 @@ public class InsuranceQuoteEngineTests
 
         // Assert
         result.Status.Should().Be(QuoteStatus.Declined);
-        result.DecisionReason.Should().Contain("Property value is below insurable limit.");
+        result.DecisionReason.Should().Contain("Property value is below insurable limit");
         result.FinalPremium.Should().Be(0m);
     }
 
@@ -220,7 +220,7 @@ public class InsuranceQuoteEngineTests
     [Fact]
     public void GenerateQuote_ShouldCalculateCorrectPremium_ForStandardCustomerWithBasicCoverage()
     {
-        // Arrange: Nhà 1,000,000,000 -> Base rate 0.1% = 1,000,000. Basic tier = 1.0x. Không giảm giá.
+        // Arrange: 1B VND property -> Base rate 0.1% = 1,000,000. Basic tier = 1.0x. No discount.
         var customer = new CustomerProfileBuilder().WithType(CustomerType.Standard).Build();
         var property = new PropertyDetailsBuilder().WithEstimatedValue(1_000_000_000m).WithYearBuilt(2015).Build();
         var request = new GenerateQuoteRequest(customer, property, CoverageTier.Basic);
@@ -238,7 +238,7 @@ public class InsuranceQuoteEngineTests
     [Fact]
     public void GenerateQuote_ShouldApplyStandardCoverageMultiplier_Of125Percent()
     {
-        // Arrange: Nhà 1 tỷ -> Base 1,000,000. Standard tier = 1.25x => 1,250,000.
+        // Arrange: 1B VND property -> Base 1,000,000. Standard tier = 1.25x => 1,250,000.
         var customer = new CustomerProfileBuilder().WithType(CustomerType.Standard).Build();
         var property = new PropertyDetailsBuilder().WithEstimatedValue(1_000_000_000m).WithYearBuilt(2015).Build();
         var request = new GenerateQuoteRequest(customer, property, CoverageTier.Standard);
@@ -254,7 +254,7 @@ public class InsuranceQuoteEngineTests
     [Fact]
     public void GenerateQuote_ShouldApplyComprehensiveCoverageMultiplier_Of160Percent()
     {
-        // Arrange: Nhà 1 tỷ -> Base 1,000,000. Comprehensive tier = 1.60x => 1,600,000.
+        // Arrange: 1B VND property -> Base 1,000,000. Comprehensive tier = 1.60x => 1,600,000.
         var customer = new CustomerProfileBuilder().WithType(CustomerType.Standard).Build();
         var property = new PropertyDetailsBuilder().WithEstimatedValue(1_000_000_000m).WithYearBuilt(2015).Build();
         var request = new GenerateQuoteRequest(customer, property, CoverageTier.Comprehensive);
@@ -270,7 +270,7 @@ public class InsuranceQuoteEngineTests
     [Fact]
     public void GenerateQuote_ShouldApplyVipDiscount_Of20Percent()
     {
-        // Arrange: Nhà 1 tỷ, gói Comprehensive (1,600,000). Khách VIP được giảm 20% => còn 1,280,000.
+        // Arrange: 1B VND property, Comprehensive tier (1,600,000). VIP customer gets 20% discount => 1,280,000.
         var customer = new CustomerProfileBuilder().AsVip().Build();
         var property = new PropertyDetailsBuilder().WithEstimatedValue(1_000_000_000m).WithYearBuilt(2015).Build();
         var request = new GenerateQuoteRequest(customer, property, CoverageTier.Comprehensive);
@@ -286,7 +286,7 @@ public class InsuranceQuoteEngineTests
     [Fact]
     public void GenerateQuote_ShouldNotApplyDiscount_WhenCustomerHasPastClaims()
     {
-        // Arrange: Khách VIP (đáng lẽ giảm 20%) nhưng có tiền sử bồi thường (HasPastClaims = true) => Mất quyền giảm giá
+        // Arrange: VIP customer with prior claims (HasPastClaims = true) => Disqualified from discount
         var customer = new CustomerProfileBuilder()
             .AsVip()
             .WithPastClaims(true)
@@ -299,7 +299,7 @@ public class InsuranceQuoteEngineTests
 
         // Assert
         result.Status.Should().Be(QuoteStatus.Approved);
-        result.FinalPremium.Should().Be(1_000_000m); // Không được giảm, giữ nguyên 1,000,000
+        result.FinalPremium.Should().Be(1_000_000m); // Retains full 1,000,000
     }
 
     #endregion
@@ -308,16 +308,16 @@ public class InsuranceQuoteEngineTests
 
 ---
 
-### Bước 3.3: Viết Production Code `InsuranceQuoteEngineService`
+### Step 3.3: Implement `InsuranceQuoteEngineService`
 
-Tạo file `src/InsuranceQuoteEngine/Domain/InsuranceQuoteEngineService.cs`:
+Create file `src/InsuranceQuoteEngine/Domain/InsuranceQuoteEngineService.cs`:
 
 ```csharp
 namespace InsuranceQuoteEngine.Domain;
 
 public class InsuranceQuoteEngineService
 {
-    private const decimal MinInsurablePropertyValue = 100_000_000m; // 100 triệu VND
+    private const decimal MinInsurablePropertyValue = 100_000_000m; // 100M VND
     private const decimal BaseRateMultiplier = 0.001m;              // 0.1%
     private const int QuoteValidityDays = 30;
 
@@ -334,7 +334,7 @@ public class InsuranceQuoteEngineService
         var now = _clock.UtcNow;
         var quoteId = Guid.NewGuid();
 
-        // 1. Kiểm tra các điều kiện từ chối (Decline Rules)
+        // 1. Check decline rules (BR-01, BR-04)
         if (request.Customer.Age < 18 || request.Customer.Age > 75)
         {
             return new QuoteResult(
@@ -359,7 +359,7 @@ public class InsuranceQuoteEngineService
                 ExpiresAtUtc: now);
         }
 
-        // 2. Kiểm tra các điều kiện chuyển chuyên viên duyệt (Referral Rules)
+        // 2. Check referral rules (BR-02, BR-03)
         if (request.Property.IsInFloodZone)
         {
             return new QuoteResult(
@@ -384,10 +384,10 @@ public class InsuranceQuoteEngineService
                 ExpiresAtUtc: now.AddDays(QuoteValidityDays));
         }
 
-        // 3. Tính phí cơ sở (Base Premium)
+        // 3. Calculate base premium (BR-05)
         var basePremium = request.Property.EstimatedValue * BaseRateMultiplier;
 
-        // 4. Áp dụng hệ số gói bảo hiểm (Coverage Tier)
+        // 4. Apply coverage tier multiplier (BR-06)
         var coverageMultiplier = request.Coverage switch
         {
             CoverageTier.Standard => 1.25m,
@@ -397,7 +397,7 @@ public class InsuranceQuoteEngineService
 
         var premiumAfterCoverage = basePremium * coverageMultiplier;
 
-        // 5. Tính toán chiết khấu (Customer Discounts)
+        // 5. Calculate customer discounts & claims adjustments (BR-07, BR-08)
         var discountPercentage = 0.0m;
         if (!request.Customer.HasPastClaims)
         {
@@ -425,21 +425,21 @@ public class InsuranceQuoteEngineService
 
 ---
 
-### Bước 3.4: Chạy kiểm thử Capstone Project
+### Step 3.4: Execute Capstone Test Suite
 
-Chạy lệnh trong terminal:
+Run from the terminal:
 ```bash
 dotnet test --filter FullyQualifiedName~InsuranceQuoteEngineTests
 ```
 
-**Kết quả:** Tất cả các bài test từ chối, chuyển duyệt, tính phí và chiết khấu đều **🟢 XANH 100%!**
+**Result:** All decline, referral, premium, and discount test cases **🟢 PASS 100%!**
 
 ---
 
-## ✅ Check-list hoàn thành Lesson 07
-- [ ] Áp dụng quy trình TDD phát triển một bài toán thực tế từ con số 0.
-- [ ] Xử lý đầy đủ ma trận các trạng thái: Approved, Referred, Declined.
-- [ ] Kết hợp trơn tru Test Data Builder và Mock Clock.
-- [ ] Mã nguồn Domain sạch sẽ, không phụ thuộc vào bất kỳ thư viện I/O hay UI bên ngoài.
+## ✅ Lesson 07 Completion Checklist
+- [ ] Applied full TDD lifecycle to develop a realistic insurance underwriting engine.
+- [ ] Validated the full matrix of states: Approved, Referred, and Declined.
+- [ ] Integrated Test Data Builders and mocked clock abstractions.
+- [ ] Built pure, isolated domain logic free from third-party I/O and UI dependencies.
 
-👉 **Tiếp theo:** Chuyển sang [Lesson 08: Đánh giá chất lượng Test với Mutation Testing (Stryker.NET)](./08-mutation-testing-stryker.md)!
+👉 **Next Step:** Proceed to [Lesson 08: Mutation Testing with Stryker.NET](./08-mutation-testing-stryker.md)!

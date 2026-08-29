@@ -76,7 +76,7 @@ public class PriceCalculatorTests
     {
         // Arrange
         const decimal price = 99.99m;
-        const decimal discount = 0.15m; // 15% của 99.99 = 14.9985 => còn 84.9915
+        const decimal discount = 0.15m; // 15% of 99.99 = 14.9985 => remaining 84.9915
 
         // Act
         var result = _sut.Calculate(price, discount);
@@ -151,7 +151,7 @@ public class PriceCalculatorTests
     {
         // Arrange
         const decimal price = 99.99m;
-        const decimal discount = 0.15m; // 15% của 99.99 = 14.9985 => còn 84.9915
+        const decimal discount = 0.15m; // 15% of 99.99 = 14.9985 => remaining 84.9915
         const decimal taxRate = 0m;
 
         // Act
@@ -190,7 +190,6 @@ public class PriceCalculatorTests
         // Assert
         result.Should().Be(88m);
     }
-
 
     #endregion
 

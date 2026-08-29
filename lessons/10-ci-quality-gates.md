@@ -1,62 +1,62 @@
-# Lesson 10: Tự động hóa CI/CD Quality Gates (Continuous Integration Quality Gates)
+# Lesson 10: Automated CI/CD Quality Gates
 
-## 🎯 Mục tiêu bài học
-- Hiểu khái niệm **Quality Gate (Cổng chất lượng)** trong quy trình CI/CD hiện đại.
-- Thiết lập quy trình tự động chặn (Block) các Pull Request (PR) kém chất lượng trước khi được phép merge vào nhánh `main`.
-- Xây dựng file cấu hình CI hoàn chỉnh cho:
+## 🎯 Lesson Objectives
+- Understand the role of **Quality Gates** in modern continuous delivery workflows.
+- Implement automated checks to block sub-standard Pull Requests (PRs) before merging into `main`.
+- Construct complete, production-ready CI workflow definitions for:
   1. **GitHub Actions (`.github/workflows/ci.yml`)**
   2. **Azure DevOps Pipelines (`azure-pipelines.yml`)**
-- Tự động thực thi:
+- Automate the enforcement pipeline:
   - Restore & Build
-  - Chạy Unit Tests
-  - Kiểm tra Code Coverage (Ngưỡng ≥ 80%)
-  - Chạy Mutation Testing với Stryker (Ngưỡng ≥ 80%)
-  - Xuất bản Test Results và Báo cáo trực tiếp lên PR.
+  - Execute Unit Tests
+  - Enforce Code Coverage thresholds (≥ 80%)
+  - Execute Mutation Testing with Stryker (Score ≥ 80%)
+  - Publish Test Results and Coverage artifacts directly to PR dashboards.
 
 ---
 
-## 🛡️ 1. Kiến trúc Pipeline & Quality Gates
+## 🛡️ 1. Pipeline Architecture & Quality Gates
 
-Mỗi khi một lập trình viên tạo hoặc cập nhật một Pull Request, hệ thống CI sẽ tự động kích hoạt chuỗi kiểm soát:
+Whenever a developer opens or updates a Pull Request, the CI pipeline triggers an automated verification chain:
 
 ```text
-                     [ Developer tạo Pull Request ]
-                                   │
-                                   ▼
-                            ┌──────────────┐
-                            │    Build     │
-                            └──────┬───────┘
-                                   │
-                              Pass │
-                                   ▼
-                            ┌──────────────┐
-                            │  Unit Tests  │
-                            └──────┬───────┘
-                                   │
-                        0 Failed   │
-                                   ▼
-                            ┌──────────────┐
-                            │   Coverage   │ ───► Fail nếu Line < 80% hoặc Branch < 75%
-                            └──────┬───────┘
-                                   │
-                              Pass │
-                                   ▼
-                            ┌──────────────┐
-                            │   Mutation   │ ───► Fail nếu Mutation Score < 80%
-                            └──────┬───────┘
-                                   │
-                              Pass │
-                                   ▼
-                       ┌───────────────────────┐
-                       │  APPROVED TO MERGE ✅ │
-                       └───────────────────────┘
+                     [ Developer Opens Pull Request ]
+                                    │
+                                    ▼
+                             ┌──────────────┐
+                             │    Build     │
+                             └──────┬───────┘
+                                    │
+                               Pass │
+                                    ▼
+                             ┌──────────────┐
+                             │  Unit Tests  │
+                             └──────┬───────┘
+                                    │
+                         0 Failed   │
+                                    ▼
+                             ┌──────────────┐
+                             │   Coverage   │ ───► Fail if Line < 80% or Branch < 75%
+                             └──────┬───────┘
+                                    │
+                               Pass │
+                                    ▼
+                             ┌──────────────┐
+                             │   Mutation   │ ───► Fail if Mutation Score < 80%
+                             └──────┬───────┘
+                                    │
+                               Pass │
+                                    ▼
+                        ┌───────────────────────┐
+                        │  APPROVED TO MERGE ✅ │
+                        └───────────────────────┘
 ```
 
 ---
 
-## 🐙 2. Thực hành cấu hình GitHub Actions (`.github/workflows/ci.yml`)
+## 🐙 2. GitHub Actions Configuration (`.github/workflows/ci.yml`)
 
-Tạo file `.github/workflows/ci.yml` tại thư mục gốc của repository:
+Create file `.github/workflows/ci.yml` at the root of the repository:
 
 ```yaml
 name: Continuous Integration & Quality Gates
@@ -73,11 +73,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout mã nguồn
+      # 1. Checkout repository source code
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # 2. Cài đặt .NET SDK 8
+      # 2. Setup .NET SDK
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
@@ -91,7 +91,7 @@ jobs:
       - name: Build Solution
         run: dotnet build --no-restore --configuration Release
 
-      # 5. Chạy Unit Tests & Đo Code Coverage
+      # 5. Run Unit Tests & Collect Coverage
       - name: Run Unit Tests & Collect Coverage
         run: >
           dotnet test tests/InsuranceQuoteEngine.UnitTests/InsuranceQuoteEngine.UnitTests.csproj
@@ -101,13 +101,13 @@ jobs:
           --results-directory ./TestResults
           --logger "trx;LogFileName=test_results.trx"
 
-      # 6. Cài đặt các công cụ CLI
+      # 6. Install global CLI tools (ReportGenerator & Stryker)
       - name: Install Global Tools (ReportGenerator & Stryker)
         run: |
           dotnet tool install -g dotnet-reportgenerator-globaltool
           dotnet tool install -g dotnet-stryker
 
-      # 7. Sinh báo cáo Code Coverage HTML & Summary
+      # 7. Generate Code Coverage HTML Report & Summary
       - name: Generate Coverage Report
         run: >
           reportgenerator
@@ -115,12 +115,12 @@ jobs:
           -targetdir:"./CoverageReport"
           -reporttypes:"HtmlInline_AzurePipelines;Badges;Cobertura"
 
-      # 8. Chạy Mutation Testing (Stryker)
+      # 8. Run Mutation Testing Gate (Stryker)
       - name: Run Stryker Mutation Testing Gate
         working-directory: ./tests/InsuranceQuoteEngine.UnitTests
         run: dotnet stryker --config-file stryker-config.json
 
-      # 9. Đăng tải Test Results lên giao diện GitHub Actions
+      # 9. Upload Test Results Artifact
       - name: Upload Test Results Artifact
         if: always()
         uses: actions/upload-artifact@v4
@@ -128,7 +128,7 @@ jobs:
           name: unit-test-results
           path: ./TestResults
 
-      # 10. Đăng tải Coverage Report lên giao diện GitHub Actions
+      # 10. Upload Coverage Report Artifact
       - name: Upload Coverage Report Artifact
         if: always()
         uses: actions/upload-artifact@v4
@@ -139,9 +139,9 @@ jobs:
 
 ---
 
-## 🔷 3. Thực hành cấu hình Azure DevOps Pipelines (`azure-pipelines.yml`)
+## 🔷 3. Azure DevOps Pipelines Configuration (`azure-pipelines.yml`)
 
-Nếu tổ chức của bạn sử dụng Azure DevOps, tạo file `azure-pipelines.yml`:
+For teams utilizing Azure DevOps, create `azure-pipelines.yml`:
 
 ```yaml
 trigger:
@@ -199,25 +199,25 @@ steps:
 
 ---
 
-## 🚨 4. Cách xử lý khi CI Quality Gate bị chặn (Fail)
+## 🚨 4. Remediation Guide for Failed Quality Gates
 
-Khi Pull Request bị báo đỏ trên GitHub hoặc Azure DevOps:
+When a PR triggers a red build in CI:
 
-1. **Nếu Unit Test bị Fail:**
-   - Mở tab **Summary / Test Results** xem cụ thể tên method nào bị fail, assertion nào không khớp.
-   - Chạy lại test đó trên máy local để debug và sửa.
-2. **Nếu Coverage Gate bị Fail (< 80%):**
-   - Tải artifact `code-coverage-report` về, mở `index.html` xem class/method nào có vệt màu đỏ (chưa được test) và bổ sung test case.
-3. **Nếu Stryker Gate bị Fail (< 80%):**
-   - Mở log của Stryker xem danh sách các **Survived Mutants**.
-   - Thêm các test case điểm biên (BVA) hoặc bổ sung assertion đang bị thiếu.
+1. **Unit Test Failure:**
+   - Open the **Test Results / Summary** tab to identify the failing method and assertion mismatch.
+   - Reproduce and debug locally using `dotnet test --filter ...`.
+2. **Coverage Gate Failure (< 80%):**
+   - Download the `code-coverage-report` artifact, open `index.html`, and identify untested lines and uncovered branches.
+3. **Mutation Gate Failure (< 80%):**
+   - Inspect Stryker build logs to view surviving mutants.
+   - Add boundary tests (BVA) or tighten assertions.
 
 ---
 
-## ✅ Check-list hoàn thành Lesson 10
-- [ ] Hiểu rõ cách hoạt động của Quality Gate trong CI/CD.
-- [ ] Tạo file `.github/workflows/ci.yml` hoặc `azure-pipelines.yml`.
-- [ ] Tích hợp đầy đủ các bước: Build → Test → Coverage → Stryker.
-- [ ] Hiểu cách cấu hình để pipeline tự động chặn merge nếu không đạt chỉ tiêu chất lượng.
+## ✅ Lesson 10 Completion Checklist
+- [ ] Understand automated Quality Gates in continuous integration pipelines.
+- [ ] Established `.github/workflows/ci.yml` / `azure-pipelines.yml`.
+- [ ] Integrated the full verification chain: Build → Test → Coverage → Stryker.
+- [ ] Configured automated merge blocking on quality regressions.
 
-👉 **Tiếp theo:** Chuyển sang [Lesson 11: Nhận diện Test Smells & Nghệ thuật Refactor Test](./11-test-refactoring-and-smells.md)!
+👉 **Next Step:** Proceed to [Lesson 11: Test Smells & Test Refactoring](./11-test-refactoring-and-smells.md)!

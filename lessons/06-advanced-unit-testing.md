@@ -1,23 +1,23 @@
-# Lesson 06: Kỹ thuật Unit Testing Nâng cao (Advanced Unit Testing)
+# Lesson 06: Advanced Unit Testing Techniques
 
-## 🎯 Mục tiêu bài học
-- Nắm vững kỹ thuật **Parameterized Testing (Kiểm thử tham số hóa)** trong xUnit:
-  - `[Theory]` kết hợp `[InlineData]`
-  - `[MemberData]` cho các tập dữ liệu phức tạp
-  - `[ClassData]` để tách riêng bộ dữ liệu kiểm thử
-- Giải quyết bài toán **Kiểm thử logic phụ thuộc vào Thời gian (Time-dependent Logic)**:
-  - Loại bỏ `DateTime.UtcNow` trực tiếp trong Domain.
-  - Sử dụng trừu tượng `IClock` hoặc `TimeProvider` (.NET 8+).
-  - Kiểm thử thời hạn hết hạn báo giá (Quote Expiration) và ngày hiệu lực hợp đồng (Policy Effective Date).
-- Kiểm thử bất đồng bộ (Async), Ngoại lệ sâu, và tính Bất biến/Idempotency.
+## 🎯 Lesson Objectives
+- Master **Parameterized Testing** in xUnit:
+  - `[Theory]` combined with `[InlineData]`
+  - `[MemberData]` for complex object collections
+  - `[ClassData]` for dedicated test-case data structures
+- Solve **Time-dependent Logic Testing**:
+  - Eliminate direct ambient calls to `DateTime.UtcNow` in domain logic.
+  - Apply the `IClock` abstraction or .NET 8+ `TimeProvider`.
+  - Deterministically test quote expiration and policy effective date ranges.
+- Handle asynchronous unit tests, deep exception assertions, and idempotency guarantees.
 
 ---
 
-## 📊 1. Parameterized Testing trong xUnit (`[Theory]`)
+## 📊 1. Parameterized Testing in xUnit (`[Theory]`)
 
-Khi bạn có cùng 1 logic kiểm thử nhưng muốn chạy với 10, 20 bộ dữ liệu đầu vào và kết quả mong đợi khác nhau:
+When a single test method must execute against dozens of different input combinations and expected outputs:
 
-### 1.1. Dùng `[InlineData]` cho dữ liệu nguyên thủy đơn giản
+### 1.1. Using `[InlineData]` for Primitive Data
 ```csharp
 [Theory]
 [InlineData(100, 0.0, 100)]
@@ -35,8 +35,8 @@ public void Calculate_ShouldReturnExpectedPrice_ForVariousDiscounts(
 }
 ```
 
-### 1.2. Dùng `[MemberData]` cho tập dữ liệu Object phức tạp
-`[MemberData]` đọc dữ liệu từ một `public static` property hoặc method trả về `IEnumerable<object[]>`:
+### 1.2. Using `[MemberData]` for Complex Object Data
+`[MemberData]` reads test data from a `public static` property or method returning `IEnumerable<object[]>`:
 
 ```csharp
 public class QuoteTestData
@@ -46,7 +46,7 @@ public class QuoteTestData
         yield return new object[] { CustomerMembership.Normal, 1000m, 0.0m };
         yield return new object[] { CustomerMembership.Premium, 1000m, 0.10m };
         yield return new object[] { CustomerMembership.Vip, 1000m, 0.20m };
-        yield return new object[] { CustomerMembership.Normal, 6_000_000m, 0.05m }; // bonus 5%
+        yield return new object[] { CustomerMembership.Normal, 6_000_000m, 0.05m }; // 5% bonus for order > 5M
     }
 }
 
@@ -63,7 +63,7 @@ public void CalculateDiscount_ShouldMatchExpectedScenario(
 }
 ```
 
-### 1.3. Dùng `[ClassData]` để tách riêng dữ liệu ra file độc lập
+### 1.3. Using `[ClassData]` for Dedicated Test Data Classes
 ```csharp
 public class InvalidPostalCodesClassData : IEnumerable<object[]>
 {
@@ -95,42 +95,42 @@ public void Validate_ShouldRejectInvalidPostalCodes(string invalidPostalCode)
 
 ---
 
-## ⏰ 2. Kiểm thử logic phụ thuộc vào Thời gian (Time-dependent Logic)
+## ⏰ 2. Testing Time-dependent Logic
 
-### ❌ Sai lầm: Gọi `DateTime.UtcNow` trực tiếp trong Business Logic
-Nếu trong code nghiệp vụ bạn viết:
+### ❌ Anti-pattern: Calling `DateTime.UtcNow` Directly in Business Logic
+Writing ambient clock calls directly in domain code:
 ```csharp
 if (DateTime.UtcNow > quote.ExpiresAtUtc)
 {
     throw new QuoteExpiredException();
 }
 ```
-Bài test của bạn sẽ trở thành **Flaky Test (chập chờn)** hoặc không thể nào test được tình huống "Giả sử bây giờ đã là 30 ngày sau".
+This produces **flaky tests** and makes it impossible to reliably simulate "30 days into the future" or specific temporal boundary conditions.
 
-### ✅ Giải pháp: Trừu tượng hóa thời gian qua `IClock` hoặc `TimeProvider`
-Trong .NET 8+, Microsoft đã chuẩn hóa việc này bằng lớp trừu tượng `System.TimeProvider` và package `Microsoft.Extensions.TimeProvider.Testing`.
-
----
-
-## 🛠️ 3. Thực hành Step-by-Step: Xây dựng `PolicyLifecycleManager` với `IClock`
-
-### Yêu cầu nghiệp vụ:
-Xây dựng lớp quản lý hiệu lực hợp đồng bảo hiểm `PolicyLifecycleManager`:
-1. **Báo giá hết hạn (Quote Expiration):** Báo giá chỉ có giá trị trong vòng **30 ngày** kể từ ngày tạo.
-2. **Kích hoạt hợp đồng (Activate Policy):**
-   - Không được kích hoạt nếu báo giá đã hết hạn → Ném `QuoteExpiredException`.
-   - Khi kích hoạt hợp đồng thành công:
-     - Ngày bắt đầu hiệu lực `EffectiveDateUtc` = Thời điểm hiện tại.
-     - Ngày kết thúc hợp đồng `ExpiryDateUtc` = Tròn 1 năm sau (`EffectiveDateUtc.AddYears(1)`).
-3. **Hủy hợp đồng (Cancel Policy):**
-   - Chỉ được hoàn tiền 100% nếu hủy trong vòng **14 ngày đầu (Cooling-off period)**.
-   - Sau 14 ngày, tính phí phạt 20% trên số tiền còn lại.
+### ✅ Solution: Abstracting Time via `IClock` or `TimeProvider`
+In .NET 8+, Microsoft standardized time abstraction via `System.TimeProvider` and `Microsoft.Extensions.TimeProvider.Testing`.
 
 ---
 
-### Bước 3.1: Định nghĩa `IClock` & Domain Models
+## 🛠️ 3. Step-by-Step Exercise: `PolicyLifecycleManager` with `IClock`
 
-Tạo file `src/InsuranceQuoteEngine/Domain/TimeAbstraction.cs`:
+### Business Requirements:
+Build a `PolicyLifecycleManager` domain service:
+1. **Quote Expiration:** Quotes are valid for **30 days** from generation.
+2. **Policy Activation:**
+   - Expired quotes cannot be activated → Throw `QuoteExpiredException`.
+   - Upon successful activation:
+     - Policy `EffectiveDateUtc` = Current UTC time.
+     - Policy `ExpiryDateUtc` = Exactly 1 year later (`EffectiveDateUtc.AddYears(1)`).
+3. **Policy Cancellation:**
+   - 100% full refund if cancelled within the **14-day cooling-off period**.
+   - After 14 days, refund is pro-rated on unused days minus a 20% cancellation fee.
+
+---
+
+### Step 3.1: Define `IClock` and Domain Models
+
+Create file `src/InsuranceQuoteEngine/Domain/TimeAbstraction.cs`:
 
 ```csharp
 namespace InsuranceQuoteEngine.Domain;
@@ -146,24 +146,10 @@ public class SystemClock : IClock
 }
 ```
 
-Tạo file `src/InsuranceQuoteEngine/Domain/PolicyLifecycle.cs`:
+Create file `src/InsuranceQuoteEngine/Domain/Services/PolicyLifecycleManager.cs`:
 
 ```csharp
 namespace InsuranceQuoteEngine.Domain;
-
-public record Policy(
-    Guid Id, 
-    Guid QuoteId, 
-    DateTime EffectiveDateUtc, 
-    DateTime ExpiryDateUtc, 
-    decimal AnnualPremium, 
-    bool IsActive);
-
-public class QuoteExpiredException : Exception
-{
-    public QuoteExpiredException(Guid quoteId) 
-        : base($"Quote '{quoteId}' has expired and cannot be activated.") { }
-}
 
 public class PolicyLifecycleManager
 {
@@ -204,25 +190,25 @@ public class PolicyLifecycleManager
             throw new ArgumentException("Cancellation date cannot be before policy effective date.");
         }
 
-        // Trong vòng 14 ngày (Cooling-off period): Hoàn 100%
+        // Within 14 days (Cooling-off period): 100% full refund
         var daysActive = (cancellationDateUtc - policy.EffectiveDateUtc).TotalDays;
         if (daysActive <= 14)
         {
             return policy.AnnualPremium;
         }
 
-        // Đã hết hạn hợp đồng
+        // Already expired policy
         if (cancellationDateUtc >= policy.ExpiryDateUtc)
         {
             return 0m;
         }
 
-        // Sau 14 ngày: Tính theo tỷ lệ ngày chưa sử dụng trừ 20% phí quản lý
+        // After 14 days: Pro-rata refund on unused days minus 20% administrative cancellation fee
         var totalDays = (policy.ExpiryDateUtc - policy.EffectiveDateUtc).TotalDays;
         var unusedDays = (policy.ExpiryDateUtc - cancellationDateUtc).TotalDays;
         var unearnedPremium = policy.AnnualPremium * (decimal)(unusedDays / totalDays);
 
-        // Phạt 20%
+        // 20% penalty fee (retain 80%)
         var refund = unearnedPremium * 0.80m;
         return Math.Round(refund, 2);
     }
@@ -231,9 +217,9 @@ public class PolicyLifecycleManager
 
 ---
 
-### Bước 3.2: Viết bộ Unit Tests hoàn toàn Deterministic (Không phụ thuộc vào thời gian thật)
+### Step 3.2: Write Deterministic Unit Tests
 
-Tạo file `tests/InsuranceQuoteEngine.UnitTests/Domain/PolicyLifecycleManagerTests.cs`:
+Create file `tests/InsuranceQuoteEngine.UnitTests/Domain/PolicyLifecycleManagerTests.cs`:
 
 ```csharp
 using FluentAssertions;
@@ -257,13 +243,13 @@ public class PolicyLifecycleManagerTests
     [Fact]
     public void ActivateQuote_ShouldCreateValidPolicy_WhenQuoteIsNotExpired()
     {
-        // Arrange: Đóng băng thời gian tại ngày 01/01/2026 10:00:00 UTC
+        // Arrange: Freeze time at 2026-01-01 10:00:00 UTC
         var fixedNow = new DateTime(2026, 1, 1, 10, 0, 0, DateTimeKind.Utc);
         _clockMock.Setup(c => c.UtcNow).Returns(fixedNow);
 
         var quote = new InsuranceQuoteBuilder()
             .WithFinalPremium(1200m)
-            .Build(); // Hạn mặc định là +30 ngày (31/01/2026)
+            .Build(); // Default expiration is +30 days (2026-01-31)
 
         // Act
         var policy = _sut.ActivateQuote(quote);
@@ -271,7 +257,7 @@ public class PolicyLifecycleManagerTests
         // Assert
         policy.Should().NotBeNull();
         policy.EffectiveDateUtc.Should().Be(fixedNow);
-        policy.ExpiryDateUtc.Should().Be(fixedNow.AddYears(1)); // 01/01/2027
+        policy.ExpiryDateUtc.Should().Be(fixedNow.AddYears(1)); // 2027-01-01
         policy.AnnualPremium.Should().Be(1200m);
         policy.IsActive.Should().BeTrue();
     }
@@ -279,12 +265,12 @@ public class PolicyLifecycleManagerTests
     [Fact]
     public void ActivateQuote_ShouldThrowQuoteExpiredException_WhenCurrentTimeIsPastExpirationDate()
     {
-        // Arrange: Thời điểm hiện tại là sau ngày hết hạn của báo giá
+        // Arrange: Current time is past quote expiration date
         var fixedNow = new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc);
         _clockMock.Setup(c => c.UtcNow).Returns(fixedNow);
 
         var quote = new InsuranceQuoteBuilder()
-            .Expired() // Đã hết hạn trước đó
+            .Expired()
             .Build();
 
         // Act
@@ -296,7 +282,7 @@ public class PolicyLifecycleManagerTests
     }
 
     [Fact]
-    public void CalculateRefund_ShouldReturnFullAmount_WhenCancelledWithin14DaysCoolingOffPeriod()
+    public void CalculateRefundOnCancellation_ShouldReturnFullAmount_WhenCancelledWithin14DaysCoolingOffPeriod()
     {
         // Arrange
         var effectiveDate = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -309,19 +295,19 @@ public class PolicyLifecycleManagerTests
             IsActive: true
         );
 
-        var cancellationDate = effectiveDate.AddDays(10); // Ngày thứ 10 (<= 14 ngày)
+        var cancellationDate = effectiveDate.AddDays(10); // Day 10 (<= 14 days)
 
         // Act
         var refund = _sut.CalculateRefundOnCancellation(policy, cancellationDate);
 
         // Assert
-        refund.Should().Be(1000m); // Hoàn 100%
+        refund.Should().Be(1000m); // 100% refund
     }
 
     [Fact]
-    public void CalculateRefund_ShouldApply20PercentPenalty_WhenCancelledAfter14Days()
+    public void CalculateRefundOnCancellation_ShouldApply20PercentPenalty_WhenCancelledAfter14Days()
     {
-        // Arrange: Hợp đồng 365 ngày giá 1000, hủy vào ngày thứ 100
+        // Arrange: 365-day policy priced at 1000, cancelled on day 100
         var effectiveDate = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         var expiryDate = effectiveDate.AddDays(365);
         var policy = new Policy(
@@ -334,8 +320,8 @@ public class PolicyLifecycleManagerTests
         );
 
         var cancellationDate = effectiveDate.AddDays(100); 
-        // Còn 265 ngày chưa dùng => Unearned = 1000 * (265 / 365) = 726.027
-        // Phạt 20% => Hoàn 80% của 726.027 = 580.82
+        // 265 unused days left => Unearned = 1000 * (265 / 365) = 726.027
+        // 20% penalty fee => 80% refund of 726.027 = 580.82
 
         // Act
         var refund = _sut.CalculateRefundOnCancellation(policy, cancellationDate);
@@ -348,10 +334,10 @@ public class PolicyLifecycleManagerTests
 
 ---
 
-## ✅ Check-list hoàn thành Lesson 06
-- [ ] Sử dụng thành thạo `[Theory]`, `[InlineData]`, `[MemberData]`, `[ClassData]`.
-- [ ] Không còn gọi `DateTime.UtcNow` trực tiếp trong Domain Logic.
-- [ ] Làm chủ kỹ thuật đóng băng thời gian trong test với Mock `IClock`.
-- [ ] Toàn bộ test suite chạy ổn định 100%, không bị ảnh hưởng bởi múi giờ hay thời điểm chạy test.
+## ✅ Lesson 06 Completion Checklist
+- [ ] Mastered `[Theory]`, `[InlineData]`, `[MemberData]`, and `[ClassData]`.
+- [ ] Eliminated direct `DateTime.UtcNow` dependencies from domain logic.
+- [ ] Controlled temporal execution states in tests using mocked `IClock`.
+- [ ] Validated 100% deterministic test execution immune to clock drift and timezone offsets.
 
-👉 **Tiếp theo:** Chuyển sang [Lesson 07: Dự án Capstone Thực Chiến – Insurance Quote Engine](./07-insurance-quote-engine-capstone.md)!
+👉 **Next Step:** Proceed to [Lesson 07: Capstone Project – Insurance Quote Engine](./07-insurance-quote-engine-capstone.md)!

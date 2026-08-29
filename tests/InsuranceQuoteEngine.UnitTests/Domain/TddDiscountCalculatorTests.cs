@@ -19,7 +19,7 @@ public class TddDiscountCalculatorTests
         discount.Should().Be(0.0m);
     }
 
-     [Fact]
+    [Fact]
     public void CalculateDiscount_ShouldReturn10Percent_ForPremiumCustomer()
     {
         // Arrange
@@ -38,7 +38,7 @@ public class TddDiscountCalculatorTests
         // Arrange
         var calculator = new DiscountCalculator();
 
-        // Act - Khách hàng thường nhưng mua 6,000,000 -> nhận 5% (0 + 0.05)
+        // Act - Standard customer with order of 6,000,000 receives 5% bonus (0 + 0.05)
         var discount = calculator.CalculateDiscount(CustomerMembership.Normal, orderAmount: 6_000_000m);
 
         // Assert
@@ -51,7 +51,7 @@ public class TddDiscountCalculatorTests
         // Arrange
         var calculator = new DiscountCalculator();
 
-        // Act - VIP (20%) + Đơn lớn (5%) = 25%
+        // Act - VIP (20%) + Large order bonus (5%) = 25%
         var discount = calculator.CalculateDiscount(CustomerMembership.Vip, orderAmount: 6_000_000m);
 
         // Assert
@@ -61,7 +61,7 @@ public class TddDiscountCalculatorTests
     [Fact]
     public void CalculateDiscount_ShouldCapDiscountAt30Percent_WhenTotalDiscountExceedsThreshold()
     {
-        // Giả sử ta thêm tham số extraPromotion = 0.15m (VIP 0.20 + bonus 0.05 + extra 0.15 = 0.40 => Phải bị giới hạn ở 0.30)
+        // VIP (0.20) + bonus (0.05) + extra coupon (0.15) = 0.40 => Must be capped at 0.30
         var calculator = new DiscountCalculator();
 
         var discount = calculator.CalculateDiscount(CustomerMembership.Vip, orderAmount: 6_000_000m, extraCouponDiscount: 0.15m);

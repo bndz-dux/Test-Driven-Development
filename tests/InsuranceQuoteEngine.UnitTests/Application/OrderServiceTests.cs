@@ -15,7 +15,7 @@ public class OrderServiceTests
 
     public OrderServiceTests()
     {
-        // Khởi tạo SUT với các dependencies đã được mock
+        // Initialize SUT with mocked dependencies
         _sut = new OrderService(
             _customerRepoMock.Object,
             _paymentServiceMock.Object,
@@ -46,13 +46,13 @@ public class OrderServiceTests
         // Assert
         orderId.Should().NotBeEmpty();
 
-        // Verify: Đơn hàng phải được lưu đúng thông tin
+        // Verify: Order must be persisted with matching details
         _orderRepoMock.Verify(x => x.SaveAsync(
             It.Is<Order>(o => o.CustomerId == customerId && o.Amount == 150m && o.Id == orderId),
             It.IsAny<CancellationToken>()), 
             Times.Once);
 
-        // Verify: PaymentService chỉ được gọi duy nhất 1 lần
+        // Verify: PaymentService is called exactly once
         _paymentServiceMock.Verify(x => x.ProcessPaymentAsync(customerId, 150m, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -69,7 +69,7 @@ public class OrderServiceTests
 
         _customerRepoMock
             .Setup(x => x.GetByIdAsync(customerId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Customer?)null); // Giả lập không tìm thấy
+            .ReturnsAsync((Customer?)null); // Simulate customer not found
 
         // Act
         Func<Task> act = async () => await _sut.CreateOrderAsync(request);
@@ -78,7 +78,7 @@ public class OrderServiceTests
         await act.Should().ThrowAsync<CustomerNotFoundException>()
             .WithMessage($"*{customerId}*");
 
-        // Verify: Tuyệt đối không được thanh toán hay lưu đơn hàng khi khách không tồn tại!
+        // Verify: Never attempt payment or order saving when customer does not exist
         _paymentServiceMock.Verify(x => x.ProcessPaymentAsync(It.IsAny<Guid>(), It.IsAny<decimal>(), It.IsAny<CancellationToken>()), Times.Never);
         _orderRepoMock.Verify(x => x.SaveAsync(It.IsAny<Order>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -101,7 +101,7 @@ public class OrderServiceTests
         // Assert
         await act.Should().ThrowAsync<CustomerBlockedException>();
 
-        // Verify: Không được thanh toán
+        // Verify: Never attempt payment or order saving when customer is blocked
         _paymentServiceMock.Verify(x => x.ProcessPaymentAsync(It.IsAny<Guid>(), It.IsAny<decimal>(), It.IsAny<CancellationToken>()), Times.Never);
         _orderRepoMock.Verify(x => x.SaveAsync(It.IsAny<Order>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -120,7 +120,7 @@ public class OrderServiceTests
         // Assert
         await act.Should().ThrowAsync<ArgumentOutOfRangeException>();
 
-        // Verify: Không chạm tới bất kỳ repository nào
+        // Verify: Guard clause triggers before calling any repository
         _customerRepoMock.Verify(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -147,7 +147,7 @@ public class OrderServiceTests
         await act.Should().ThrowAsync<PaymentFailedException>()
             .WithMessage("*Insufficient funds*");
 
-        // Verify: Tuyệt đối KHÔNG lưu đơn hàng vào DB khi thanh toán thất bại
+        // Verify: NEVER persist order to DB when payment fails
         _orderRepoMock.Verify(x => x.SaveAsync(It.IsAny<Order>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 

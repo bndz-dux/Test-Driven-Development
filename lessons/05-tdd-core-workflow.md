@@ -1,62 +1,62 @@
-# Lesson 05: Thực hành TDD Cốt lõi (Red – Green – Refactor)
+# Lesson 05: TDD Core Workflow (Red – Green – Refactor)
 
-## 🎯 Mục tiêu bài học
-- Nắm vững triết lý và 3 định luật TDD của Uncle Bob (Robert C. Martin).
-- Làm chủ chu kỳ TDD kinh điển: **🔴 RED → 🟢 GREEN → 🔵 REFACTOR**.
-- Thay đổi tư duy: Từ "Viết code xong rồi viết test đối phó" sang **"Dùng test để đặc tả và dẫn dắt thiết kế phần mềm"**.
-- Trải nghiệm từng bước nhỏ (Baby Steps) để kiểm soát 100% logic và không bao giờ bị rối.
-- **Thực hành Test-First:** Xây dựng tính năng tính toán chiết khấu và xử lý đơn hàng từ con số 0.
+## 🎯 Lesson Objectives
+- Master the philosophy and the Three Laws of TDD by Uncle Bob (Robert C. Martin).
+- Master the classic TDD cycle: **🔴 RED → 🟢 GREEN → 🔵 REFACTOR**.
+- Transform your mindset: From "Writing code first and tests as an afterthought" to **"Using tests to specify requirements and drive software architecture"**.
+- Experience small, incremental baby steps to maintain complete control over logic.
+- **Hands-on Test-First:** Build a discount calculation engine from scratch purely driven by tests.
 
 ---
 
-## 🔄 1. Chu trình TDD (The Red – Green – Refactor Cycle)
+## 🔄 1. The Red – Green – Refactor Cycle
 
 ```text
                ┌──────────────────────────────────────────────┐
                │                                              │
                ▼                                              │
          ┌───────────┐                                        │
-         │  🔴 RED   │  Viết 1 test miêu tả hành vi mong muốn  │
-         └─────┬─────┘  (Test phải BÁO ĐỎ / FAIL)             │
+         │  🔴 RED   │  Write a test describing desired       │
+         └─────┬─────┘  behavior (Test must FAIL)             │
                │                                              │
                ▼                                              │
         ┌─────────────┐                                       │
-        │  🟢 GREEN   │  Viết lượng code TỐI THIỂU để test qua │
-        └──────┬──────┘  (Làm cho Test BÁO XANH / PASS)        │
+        │  🟢 GREEN   │  Write the MINIMAL production code    │
+        └──────┬──────┘  to make the test PASS                │
                │                                              │
                ▼                                              │
        ┌───────────────┐                                      │
-       │  🔵 REFACTOR  │  Làm sạch code, xóa bỏ trùng lặp,     │
-       └───────┬───────┘  tối ưu thiết kế mà VẪN XANH TEST   │
+       │  🔵 REFACTOR  │  Clean code, remove duplication,     │
+       └───────┬───────┘  improve design while tests STAY GREEN│
                │                                              │
                └──────────────────────────────────────────────┘
 ```
 
-### 📜 3 Định luật TDD của Uncle Bob (3 Laws of TDD):
-1. **Định luật 1:** Bạn không được phép viết bất kỳ dòng mã nguồn sản phẩm (Production Code) nào trừ khi nó dùng để làm cho một bài Unit Test đang đỏ trở nên xanh.
-2. **Định luật 2:** Bạn chỉ được phép viết vừa đủ một bài Unit Test đến khi nó bị Fail (lỗi không biên dịch được cũng tính là Fail).
-3. **Định luật 3:** Bạn chỉ được phép viết vừa đủ dòng Production Code tối thiểu để làm bài test đang Fail đó Pass.
+### 📜 Uncle Bob's Three Laws of TDD:
+1. **First Law:** You may not write any production code until you have written a failing unit test.
+2. **Second Law:** You may not write more of a unit test than is sufficient to fail, and not compiling is failing.
+3. **Third Law:** You may not write more production code than is sufficient to pass the currently failing unit test.
 
 ---
 
-## 🛠️ 2. Thực hành Step-by-Step: Xây dựng `DiscountCalculator` bằng TDD
+## 🛠️ 2. Step-by-Step Exercise: Building `DiscountCalculator` via TDD
 
-Chúng ta cùng đi qua từng chu kỳ **RED → GREEN → REFACTOR** thực tế để hiểu sức mạnh của TDD.
+We will walk through practical **RED → GREEN → REFACTOR** iterations to experience the power of TDD.
 
-### Yêu cầu nghiệp vụ (Requirement):
-Hệ thống tính chiết khấu cho khách hàng khi mua hàng:
-1. Khách hàng thường (Normal) → 0% giảm giá.
-2. Khách hàng thân thiết (Premium) → 10% giảm giá.
-3. Khách hàng VIP → 20% giảm giá.
-4. Đơn hàng trên 5,000,000 VND → Thêm 5% giảm giá (áp dụng cộng dồn cho tất cả loại khách hàng).
-5. Mức giảm giá tối đa không bao giờ được vượt quá 30%.
+### Business Requirements:
+A retail pricing system calculates customer discounts based on:
+1. Standard customer (Normal) → 0% base discount.
+2. Loyalty customer (Premium) → 10% base discount.
+3. VIP customer → 20% base discount.
+4. Orders exceeding 5,000,000 VND → Add 5% bonus discount (stacks on all tiers).
+5. The maximum cumulative discount cap must never exceed 30%.
 
 ---
 
-### 🟢 Chu kỳ 1: Khách hàng Normal nhận 0% giảm giá
+### 🟢 Cycle 1: Normal Customer Receives 0% Discount
 
-#### Bước 1.1: 🔴 RED (Viết Test đầu tiên)
-Tạo file `tests/InsuranceQuoteEngine.UnitTests/Domain/TddDiscountCalculatorTests.cs`:
+#### Step 1.1: 🔴 RED (Write the First Test)
+Create file `tests/InsuranceQuoteEngine.UnitTests/Domain/TddDiscountCalculatorTests.cs`:
 
 ```csharp
 using FluentAssertions;
@@ -80,12 +80,12 @@ public class TddDiscountCalculatorTests
     }
 }
 ```
-*Trạng thái:* **Lỗi biên dịch** (`DiscountCalculator` và `CustomerMembership` chưa tồn tại). Đây chính là trạng thái **🔴 RED** hợp lệ theo TDD!
+*Status:* **Compilation Error** (`DiscountCalculator` and `CustomerMembership` do not exist yet). This constitutes a valid **🔴 RED** state in TDD!
 
 ---
 
-#### Bước 1.2: 🟢 GREEN (Viết Code tối thiểu nhất để Pass)
-Tạo file `src/InsuranceQuoteEngine/Domain/DiscountCalculator.cs`:
+#### Step 1.2: 🟢 GREEN (Minimal Code to Pass)
+Create file `src/InsuranceQuoteEngine/Domain/DiscountCalculator.cs`:
 
 ```csharp
 namespace InsuranceQuoteEngine.Domain;
@@ -101,24 +101,24 @@ public class DiscountCalculator
 {
     public decimal CalculateDiscount(CustomerMembership membership, decimal orderAmount)
     {
-        // Trả về kết quả cứng (Hardcode) tối thiểu để bài test 1 PASS!
+        // Return minimal hardcoded value to make test 1 PASS!
         return 0.0m;
     }
 }
 ```
-*Chạy test:* `dotnet test` → **🟢 GREEN (PASS)!**
+*Run tests:* `dotnet test` → **🟢 GREEN (PASS)!**
 
 ---
 
-#### Bước 1.3: 🔵 REFACTOR
-Hiện tại code rất đơn giản, chưa có gì cần dọn dẹp. Sang chu kỳ tiếp theo!
+#### Step 1.3: 🔵 REFACTOR
+The implementation is trivial; no refactoring is required yet. Proceed to Cycle 2!
 
 ---
 
-### 🟢 Chu kỳ 2: Khách hàng Premium nhận 10% giảm giá
+### 🟢 Cycle 2: Premium Customer Receives 10% Discount
 
-#### Bước 2.1: 🔴 RED (Thêm Test mới)
-Thêm vào `tests/InsuranceQuoteEngine.UnitTests/Domain/TddDiscountCalculatorTests.cs`:
+#### Step 2.1: 🔴 RED (Add Next Test)
+Add to `tests/InsuranceQuoteEngine.UnitTests/Domain/TddDiscountCalculatorTests.cs`:
 
 ```csharp
     [Fact]
@@ -134,12 +134,12 @@ Thêm vào `tests/InsuranceQuoteEngine.UnitTests/Domain/TddDiscountCalculatorTes
         discount.Should().Be(0.10m);
     }
 ```
-*Chạy test:* Bài test này **🔴 FAIL** (Kỳ vọng `0.10m` nhưng thực tế nhận `0.0m`).
+*Run tests:* The new test **🔴 FAILS** (Expected `0.10m`, but received `0.0m`).
 
 ---
 
-#### Bước 2.2: 🟢 GREEN (Sửa Production Code tối thiểu)
-Sửa `src/InsuranceQuoteEngine/Domain/DiscountCalculator.cs`:
+#### Step 2.2: 🟢 GREEN (Minimal Production Code)
+Update `src/InsuranceQuoteEngine/Domain/DiscountCalculator.cs`:
 
 ```csharp
 public class DiscountCalculator
@@ -155,13 +155,13 @@ public class DiscountCalculator
     }
 }
 ```
-*Chạy test:* Cả 2 bài test đều **🟢 GREEN!**
+*Run tests:* Both tests **🟢 PASS!**
 
 ---
 
-### 🟢 Chu kỳ 3: Khách hàng VIP nhận 20% giảm giá
+### 🟢 Cycle 3: VIP Customer Receives 20% Discount
 
-#### Bước 3.1: 🔴 RED
+#### Step 3.1: 🔴 RED
 ```csharp
     [Fact]
     public void CalculateDiscount_ShouldReturn20Percent_ForVipCustomer()
@@ -176,12 +176,12 @@ public class DiscountCalculator
         discount.Should().Be(0.20m);
     }
 ```
-*Chạy test:* **🔴 FAIL!**
+*Run tests:* **🔴 FAILS!**
 
 ---
 
-#### Bước 3.2: 🟢 GREEN & 🔵 REFACTOR
-Sửa `DiscountCalculator.cs` bằng cấu trúc `switch expression` sạch đẹp:
+#### Step 3.2: 🟢 GREEN & 🔵 REFACTOR
+Refactor `DiscountCalculator.cs` with an expressive pattern matching `switch`:
 
 ```csharp
 public class DiscountCalculator
@@ -197,13 +197,13 @@ public class DiscountCalculator
     }
 }
 ```
-*Chạy test:* Toàn bộ 3 bài test đều **🟢 GREEN!**
+*Run tests:* All 3 tests **🟢 PASS!**
 
 ---
 
-### 🟢 Chu kỳ 4: Đơn hàng > 5,000,000 nhận thêm 5% chiết khấu
+### 🟢 Cycle 4: Orders > 5,000,000 Receive 5% Bonus Discount
 
-#### Bước 4.1: 🔴 RED
+#### Step 4.1: 🔴 RED
 ```csharp
     [Fact]
     public void CalculateDiscount_ShouldAdd5PercentBonus_WhenOrderAmountIsGreaterThan5Million()
@@ -211,7 +211,7 @@ public class DiscountCalculator
         // Arrange
         var calculator = new DiscountCalculator();
 
-        // Act - Khách hàng thường nhưng mua 6,000,000 -> nhận 5% (0 + 0.05)
+        // Act - Standard customer with order of 6,000,000 receives 5% bonus (0 + 0.05)
         var discount = calculator.CalculateDiscount(CustomerMembership.Normal, orderAmount: 6_000_000m);
 
         // Assert
@@ -224,18 +224,18 @@ public class DiscountCalculator
         // Arrange
         var calculator = new DiscountCalculator();
 
-        // Act - VIP (20%) + Đơn lớn (5%) = 25%
+        // Act - VIP (20%) + Large order bonus (5%) = 25%
         var discount = calculator.CalculateDiscount(CustomerMembership.Vip, orderAmount: 6_000_000m);
 
         // Assert
         discount.Should().Be(0.25m);
     }
 ```
-*Chạy test:* Cả 2 bài test mới đều **🔴 FAIL!**
+*Run tests:* Both new tests **🔴 FAIL!**
 
 ---
 
-#### Bước 4.2: 🟢 GREEN
+#### Step 4.2: 🟢 GREEN
 ```csharp
 public class DiscountCalculator
 {
@@ -260,19 +260,18 @@ public class DiscountCalculator
     }
 }
 ```
-*Chạy test:* Tất cả 5 bài test **🟢 GREEN!**
+*Run tests:* All 5 tests **🟢 PASS!**
 
 ---
 
-### 🟢 Chu kỳ 5: Mức giảm giá tối đa không vượt quá 30% (Max Discount Cap)
+### 🟢 Cycle 5: Maximum Cumulative Discount Capped at 30%
 
-#### Bước 5.1: 🔴 RED
-Giả sử trong tương lai có thêm khuyến mãi cộng dồn khiến tổng chiết khấu vượt 30%:
+#### Step 5.1: 🔴 RED
 ```csharp
     [Fact]
     public void CalculateDiscount_ShouldCapDiscountAt30Percent_WhenTotalDiscountExceedsThreshold()
     {
-        // Giả sử ta thêm tham số extraPromotion = 0.15m (VIP 0.20 + bonus 0.05 + extra 0.15 = 0.40 => Phải bị giới hạn ở 0.30)
+        // VIP (0.20) + bonus (0.05) + extra coupon (0.15) = 0.40 => Must be capped at 0.30
         var calculator = new DiscountCalculator();
 
         var discount = calculator.CalculateDiscount(CustomerMembership.Vip, orderAmount: 6_000_000m, extraCouponDiscount: 0.15m);
@@ -283,9 +282,9 @@ Giả sử trong tương lai có thêm khuyến mãi cộng dồn khiến tổng
 
 ---
 
-#### Bước 5.2: 🟢 GREEN & 🔵 REFACTOR
+#### Step 5.2: 🟢 GREEN & 🔵 REFACTOR
 
-Cập nhật `src/InsuranceQuoteEngine/Domain/DiscountCalculator.cs`:
+Update `src/InsuranceQuoteEngine/Domain/Services/DiscountCalculator.cs`:
 
 ```csharp
 namespace InsuranceQuoteEngine.Domain;
@@ -294,7 +293,7 @@ public class DiscountCalculator
 {
     private const decimal LargeOrderThreshold = 5_000_000m;
     private const decimal LargeOrderBonusDiscount = 0.05m;
-    private const decimal MaxDiscountCap = 0.30m; // 30% tối đa
+    private const decimal MaxDiscountCap = 0.30m; // 30% maximum cap
 
     public decimal CalculateDiscount(
         CustomerMembership membership, 
@@ -315,7 +314,7 @@ public class DiscountCalculator
 
         totalDiscount += Math.Max(0m, extraCouponDiscount);
 
-        // Áp dụng giới hạn tối đa
+        // Apply maximum discount cap
         return Math.Min(totalDiscount, MaxDiscountCap);
     }
 
@@ -330,17 +329,17 @@ public class DiscountCalculator
 
 ---
 
-## 🎯 3. Bài học rút ra từ thực tế TDD
+## 🎯 3. Practical TDD Takeaways
 
-1. **Không đoán mò tương lai (YAGNI - You Aren't Gonna Need It):** Chỉ viết code để phục vụ bài test hiện tại.
-2. **Tự tin Refactor 100%:** Khi có mạng lưới test bảo hộ, bạn có thể tách hàm, đổi tên biến, tối ưu thuật toán mà không sợ làm gãy ứng dụng.
-3. **Thiết kế API tự nhiên hơn:** Bạn đóng vai trò là "người dùng" của class trước khi bạn bắt tay vào "viết" class đó.
+1. **Avoid Speculative Architecture (YAGNI):** Write code strictly in response to failing tests.
+2. **Fearless Refactoring:** Comprehensive test coverage acts as a safety harness, enabling aggressive code cleanup and restructuring.
+3. **Natural API Design:** You experience your classes from the consumer perspective before writing the implementation.
 
 ---
 
-## ✅ Check-list hoàn thành Lesson 05
-- [ ] Hiểu rõ 3 định luật TDD và chu kỳ Red – Green – Refactor.
-- [ ] Trải nghiệm cảm giác viết test trước khi viết bất kỳ dòng production code nào.
-- [ ] Hoàn thành trọn vẹn lớp `DiscountCalculator` và toàn bộ test suite.
+## ✅ Lesson 05 Completion Checklist
+- [ ] Understand the Three Laws of TDD and the Red – Green – Refactor cycle.
+- [ ] Practiced writing failing tests before producing implementation code.
+- [ ] Completed the implementation of `DiscountCalculator` driven by tests.
 
-👉 **Tiếp theo:** Chuyển sang [Lesson 06: Kỹ thuật Unit Testing Nâng cao (Parameterized, Async, Time)](./06-advanced-unit-testing.md)!
+👉 **Next Step:** Proceed to [Lesson 06: Advanced Unit Testing Techniques (Parameterized, Async, Time)](./06-advanced-unit-testing.md)!

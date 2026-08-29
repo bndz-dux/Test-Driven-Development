@@ -1,76 +1,76 @@
-# Lesson 09: Đo lường Code Coverage với Coverlet & ReportGenerator
+# Lesson 09: Measuring Code Coverage with Coverlet & ReportGenerator
 
-## 🎯 Mục tiêu bài học
-- Phân biệt các chỉ số độ phủ mã nguồn: **Line Coverage**, **Statement Coverage**, **Method Coverage**, và đặc biệt là **Branch Coverage (Độ phủ nhánh)**.
-- Hiểu đúng vị trí của Code Coverage: Là công cụ hỗ trợ tìm **vùng code bị bỏ quên**, không phải là thước đo duy nhất cho chất lượng phần mềm.
-- Sử dụng **Coverlet** để thu thập dữ liệu kiểm thử dưới định dạng Cobertura XML.
-- Sử dụng **ReportGenerator** để biến file XML thô thành **Báo cáo HTML trực quan, tương tác cao**.
-- Thiết lập ngưỡng kiểm tra độ phủ tự động (**Coverage Thresholds**).
+## 🎯 Lesson Objectives
+- Understand code coverage metrics: **Line Coverage**, **Statement Coverage**, **Method Coverage**, and specifically **Branch Coverage**.
+- Understand the role of Code Coverage: A diagnostic tool to detect **untested code paths**, rather than a singular measure of software quality.
+- Use **Coverlet** to collect cross-platform test coverage data in Cobertura XML format.
+- Use **ReportGenerator** to convert raw XML coverage files into **interactive, rich HTML visual reports**.
+- Configure automated enforcement thresholds (**Coverage Thresholds**).
 
 ---
 
-## 📊 1. Các loại Code Coverage cần biết
+## 📊 1. Code Coverage Metrics
 
 ```text
                ┌────────────────────────────────────────────────────────┐
-               │                  Các loại Code Coverage                │
+               │                   Code Coverage Metrics                │
                └───────────────────────────┬────────────────────────────┘
          ┌─────────────────────────────────┼────────────────────────────┐
          ▼                                 ▼                            ▼
 ┌──────────────────┐             ┌──────────────────┐         ┌──────────────────┐
 │  Line Coverage   │             │ Branch Coverage  │         │ Method Coverage  │
 ├──────────────────┤             ├──────────────────┤         ├──────────────────┤
-│ Tỷ lệ dòng code  │             │ Tỷ lệ các nhánh  │         │ Tỷ lệ các hàm    │
-│ được chạy qua    │             │ IF / ELSE / CASE │         │ có ít nhất 1 lần │
-│ bởi test suite.  │             │ được rẽ nhánh.   │         │ được gọi tới.    │
+│ Percentage of    │             │ Percentage of    │         │ Percentage of    │
+│ lines executed   │             │ conditional      │         │ methods invoked  │
+│ by test suite.   │             │ branches taken.  │         │ at least once.   │
 └──────────────────┘             └──────────────────┘         └──────────────────┘
 ```
 
-### 💡 Tại sao Branch Coverage quan trọng hơn Line Coverage?
-Xem xét đoạn code:
+### 💡 Why Branch Coverage is Superior to Line Coverage:
+Consider this method:
 ```csharp
 public decimal CalculateBonus(bool isVip, decimal amount)
 {
     decimal bonus = 0;
-    if (isVip && amount > 1000) // Có 2 điều kiện boolean => Có 4 nhánh logic
+    if (isVip && amount > 1000) // 2 boolean conditions => 4 logical branches
     {
         bonus = 100;
     }
     return bonus;
 }
 ```
-Nếu bạn chỉ viết 1 bài test với `isVip = true` và `amount = 2000`, bạn sẽ đạt **100% Line Coverage**, nhưng **Branch Coverage mới chỉ đạt 50%** vì bạn chưa kiểm tra nhánh khi `isVip = false` hoặc `amount <= 1000`!
+If you only write 1 test with `isVip = true` and `amount = 2000`, you achieve **100% Line Coverage**, but **Branch Coverage is only 50%** because the `false` branches were never exercised!
 
 ---
 
-## 🛠️ 2. Thực hành Step-by-Step: Đo Coverage và Xuất Báo cáo HTML
+## 🛠️ 2. Step-by-Step Exercise: Measuring Coverage and Generating HTML Reports
 
-### Bước 2.1: Cài đặt công cụ ReportGenerator
+### Step 2.1: Install the ReportGenerator Tool
 
-Cài đặt công cụ toàn cục trên máy tính:
+Install the global CLI tool:
 ```bash
 dotnet tool install -g dotnet-reportgenerator-globaltool
 ```
-*(Nếu đã cài, có thể update: `dotnet tool update -g dotnet-reportgenerator-globaltool`)*
+*(If already installed, update via: `dotnet tool update -g dotnet-reportgenerator-globaltool`)*
 
 ---
 
-### Bước 2.2: Chạy Test và Thu thập Coverage bằng Coverlet
+### Step 2.2: Run Tests and Collect Coverage using Coverlet
 
-Tại thư mục gốc của dự án (`d:/LEARN BY MYSELF/TDD`), chạy lệnh:
+From the project root (`d:/LEARN BY MYSELF/TDD`), run:
 
 ```bash
 dotnet test --collect:"XPlat Code Coverage" --results-directory ./TestResults
 ```
 
-**Kết quả:**
-Một thư mục dạng `./TestResults/{GUID}/coverage.cobertura.xml` sẽ được tự động sinh ra chứa toàn bộ dữ liệu độ phủ chi tiết.
+**Result:**
+A directory `./TestResults/{GUID}/coverage.cobertura.xml` will be generated containing raw coverage data.
 
 ---
 
-### Bước 2.3: Sinh báo cáo HTML tương tác bằng ReportGenerator
+### Step 2.3: Generate Interactive HTML Report
 
-Chạy lệnh sau để gộp tất cả file kết quả thành giao diện HTML tuyệt đẹp:
+Execute ReportGenerator to compile the XML data into an interactive dashboard:
 
 ```bash
 reportgenerator -reports:"./TestResults/**/coverage.cobertura.xml" -targetdir:"./CoverageReport" -reporttypes:Html
@@ -78,55 +78,54 @@ reportgenerator -reports:"./TestResults/**/coverage.cobertura.xml" -targetdir:".
 
 ---
 
-### Bước 2.4: Xem và Phân tích Báo cáo
+### Step 2.4: Inspect and Analyze the Report
 
-Mở file `./CoverageReport/index.html` trên trình duyệt:
-- Bạn sẽ thấy tổng quan: **Line coverage %**, **Branch coverage %**, **Method coverage %**.
-- Nhấp vào từng class (ví dụ `InsuranceQuoteEngineService.cs`):
-  - 🟩 **Màu xanh lá cây:** Dòng code đã được test bao phủ hoàn toàn.
-  - 🟥 **Màu đỏ:** Dòng code chưa từng có bài test nào chạm tới.
-  - 🟨 **Màu vàng / Cam:** Nhánh rẽ điều kiện mới chỉ được test 1 nửa (chưa test nhánh `false` hoặc ngược lại).
+Open `./CoverageReport/index.html` in your browser:
+- Review summary metrics: **Line coverage %**, **Branch coverage %**, and **Method coverage %**.
+- Drill down into specific classes (e.g. `InsuranceQuoteEngineService.cs`):
+  - 🟩 **Green:** Code fully covered by tests.
+  - 🟥 **Red:** Untested code lines.
+  - 🟨 **Yellow / Orange:** Partially covered conditional branches (e.g., true condition tested, but false path missed).
 
 ---
 
-## 🛑 3. Thiết lập ngưỡng chặn tự động (Coverage Thresholds)
+## 🛑 3. Setting Automated Coverage Thresholds
 
-Bạn có thể yêu cầu lệnh test tự động báo lỗi nếu độ phủ không đạt chỉ tiêu bằng cách thêm tham số vào lệnh `dotnet test`:
+You can fail builds automatically if coverage drops below specified quality targets:
 
 ```bash
-# Yêu cầu Line Coverage tối thiểu 80% và Branch Coverage tối thiểu 75%
+# Require a minimum of 80% Line Coverage and 75% Branch Coverage
 dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:Threshold=80 /p:ThresholdType=line /p:ThresholdStat=total
 ```
 
-Nếu một thành viên trong nhóm viết code mới nhưng quên viết test khiến coverage tụt xuống dưới 80%, lệnh test sẽ trả về lỗi ngay lập tức!
+If a team member commits code without tests and coverage drops below 80%, the test run exits with an error immediately!
 
 ---
 
-## 🎯 4. Ngưỡng Coverage đề xuất trong thực tế
+## 🎯 4. Recommended Target Thresholds in Production
 
-| Loại tầng / Module | Line Coverage mục tiêu | Branch Coverage mục tiêu | Lý do |
+| Architectural Layer | Target Line Coverage | Target Branch Coverage | Rationale |
 | :--- | :--- | :--- | :--- |
-| **Domain Logic / Business Rules** | **90% – 100%** | **85% – 95%** | Nơi chứa tài sản quan trọng nhất của doanh nghiệp, không được phép có lỗi logic |
-| **Application Services** | **80% – 90%** | **75% – 85%** | Điều phối luồng và validate |
-| **Infrastructure / Repositories** | **60% – 80%** | **50% – 70%** | Thường được kiểm thử tốt hơn qua Integration Test |
-| **DTOs, Enums, Boilerplate** | *Bỏ qua (0%)* | *Bỏ qua (0%)* | Không nên tốn thời gian test getter/setter đơn giản |
+| **Domain Logic / Business Rules** | **90% – 100%** | **85% – 95%** | Core business intellectual property; defects here are costly |
+| **Application Services** | **80% – 90%** | **75% – 85%** | Orchestration and validation logic |
+| **Infrastructure / Repositories** | **60% – 80%** | **50% – 70%** | Better validated via integration tests |
+| **DTOs, Enums, Boilerplate** | *Excluded (0%)* | *Excluded (0%)* | Trivial boilerplate does not warrant test maintenance |
 
-### Cách cấu hình loại trừ (Exclude) code không cần test:
-Trong file `.csproj` của project Unit Test:
+### Excluding Boilerplate Code from Coverage:
+In the test project `.csproj` file:
 ```xml
 <PropertyGroup>
-  <!-- Bỏ qua các file Auto-generated hoặc Models thuần túy -->
   <Exclude>[*]*.Exceptions.*,[*]*.DTOs.*</Exclude>
 </PropertyGroup>
 ```
 
 ---
 
-## ✅ Check-list hoàn thành Lesson 09
-- [ ] Phân biệt rõ Line Coverage vs Branch Coverage.
-- [ ] Chạy thành công lệnh `dotnet test --collect:"XPlat Code Coverage"`.
-- [ ] Sinh thành công báo cáo HTML trực quan bằng `reportgenerator`.
-- [ ] Xem báo cáo và kiểm tra các dòng code màu vàng/đỏ để bổ sung test.
-- [ ] Thiết lập ngưỡng kiểm tra độ phủ tối thiểu 80% Line và 75% Branch.
+## ✅ Lesson 09 Completion Checklist
+- [ ] Differentiate between Line Coverage and Branch Coverage.
+- [ ] Executed `dotnet test --collect:"XPlat Code Coverage"`.
+- [ ] Generated visual HTML reports using `reportgenerator`.
+- [ ] Analyzed partial/untested branches to add missing test scenarios.
+- [ ] Configured automated coverage threshold enforcement (80% Line, 75% Branch).
 
-👉 **Tiếp theo:** Chuyển sang [Lesson 10: Tự động hóa CI/CD Quality Gates](./10-ci-quality-gates.md)!
+👉 **Next Step:** Proceed to [Lesson 10: Automated CI/CD Quality Gates](./10-ci-quality-gates.md)!

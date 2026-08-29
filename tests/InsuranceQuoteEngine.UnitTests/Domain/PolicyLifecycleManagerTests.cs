@@ -19,13 +19,13 @@ public class PolicyLifecycleManagerTests
     [Fact]
     public void ActivateQuote_ShouldCreateValidPolicy_WhenQuoteIsNotExpired()
     {
-        // Arrange: Đóng băng thời gian tại ngày 01/01/2026 10:00:00 UTC
+        // Arrange: Freeze time at 2026-01-01 10:00:00 UTC
         var fixedNow = new DateTime(2026, 1, 1, 10, 0, 0, DateTimeKind.Utc);
         _clockMock.Setup(c => c.UtcNow).Returns(fixedNow);
 
         var quote = new InsuranceQuoteBuilder()
             .WithFinalPremium(1200m)
-            .Build(); // Hạn mặc định là +30 ngày (31/01/2026)
+            .Build(); // Default expiration is +30 days (2026-01-31)
 
         // Act
         var policy = _sut.ActivateQuote(quote);
@@ -33,7 +33,7 @@ public class PolicyLifecycleManagerTests
         // Assert
         policy.Should().NotBeNull();
         policy.EffectiveDateUtc.Should().Be(fixedNow);
-        policy.ExpiryDateUtc.Should().Be(fixedNow.AddYears(1)); // 01/01/2027
+        policy.ExpiryDateUtc.Should().Be(fixedNow.AddYears(1)); // 2027-01-01
         policy.AnnualPremium.Should().Be(1200m);
         policy.IsActive.Should().BeTrue();
     }
@@ -41,12 +41,12 @@ public class PolicyLifecycleManagerTests
     [Fact]
     public void ActivateQuote_ShouldThrowQuoteExpiredException_WhenCurrentTimeIsPastExpirationDate()
     {
-        // Arrange: Thời điểm hiện tại (01/03/2026) là sau ngày hết hạn của báo giá (20/02/2026)
+        // Arrange: Current time (2026-03-01) is after quote expiration date (2026-02-20)
         var fixedNow = new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc);
         _clockMock.Setup(c => c.UtcNow).Returns(fixedNow);
 
         var quote = new InsuranceQuoteBuilder()
-            .WithExpiresAtUtc(fixedNow.AddDays(-5)) // Đã hết hạn trước thời điểm fixedNow
+            .WithExpiresAtUtc(fixedNow.AddDays(-5)) // Expired before fixedNow
             .Build();
 
         // Act
@@ -71,19 +71,19 @@ public class PolicyLifecycleManagerTests
             IsActive: true
         );
 
-        var cancellationDate = effectiveDate.AddDays(10); // Ngày thứ 10 (<= 14 ngày)
+        var cancellationDate = effectiveDate.AddDays(10); // Day 10 (<= 14 days)
 
         // Act
         var refund = _sut.CalculateRefundOnCancellation(policy, cancellationDate);
 
         // Assert
-        refund.Should().Be(1000m); // Hoàn 100%
+        refund.Should().Be(1000m); // 100% full refund
     }
 
     [Fact]
     public void CalculateRefundOnCancellation_ShouldApply20PercentPenalty_WhenCancelledAfter14Days()
     {
-        // Arrange: Hợp đồng 365 ngày giá 1000, hủy vào ngày thứ 100
+        // Arrange: 365-day policy priced at 1000, cancelled on day 100
         var effectiveDate = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         var expiryDate = effectiveDate.AddDays(365);
         var policy = new Policy(
@@ -96,8 +96,8 @@ public class PolicyLifecycleManagerTests
         );
 
         var cancellationDate = effectiveDate.AddDays(100); 
-        // Còn 265 ngày chưa dùng => Unearned = 1000 * (265 / 365) = 726.027
-        // Phạt 20% => Hoàn 80% của 726.027 = 580.82
+        // 265 unused days left => Unearned = 1000 * (265 / 365) = 726.027
+        // 20% penalty fee => 80% refund of 726.027 = 580.82
 
         // Act
         var refund = _sut.CalculateRefundOnCancellation(policy, cancellationDate);

@@ -188,7 +188,7 @@ public class InsuranceQuoteEngineTests
 
         // Assert
         result.Status.Should().Be(QuoteStatus.Approved);
-        result.BasePremium.Should().Be(100_000m); // 100tr * 0.1% = 100k
+        result.BasePremium.Should().Be(100_000m); // 100M * 0.1% = 100k
         result.FinalPremium.Should().Be(100_000m);
     }
 
@@ -217,7 +217,7 @@ public class InsuranceQuoteEngineTests
     [Fact]
     public void GenerateQuote_ShouldCalculateCorrectPremium_ForStandardCustomerWithBasicCoverage()
     {
-        // Arrange: Nhà 1,000,000,000 -> Base rate 0.1% = 1,000,000. Basic tier = 1.0x. Không giảm giá.
+        // Arrange: 1B VND property -> Base rate 0.1% = 1,000,000. Basic tier = 1.0x. No discount.
         var customer = new CustomerProfileBuilder().WithType(CustomerType.Standard).Build();
         var property = new PropertyDetailsBuilder().WithEstimatedValue(1_000_000_000m).WithYearBuilt(2015).Build();
         var request = new GenerateQuoteRequest(customer, property, CoverageTier.Basic);
@@ -237,7 +237,7 @@ public class InsuranceQuoteEngineTests
     [Fact]
     public void GenerateQuote_ShouldApplyStandardCoverageMultiplier_Of125Percent()
     {
-        // Arrange: Nhà 1 tỷ -> Base 1,000,000. Standard tier = 1.25x => 1,250,000.
+        // Arrange: 1B VND property -> Base 1,000,000. Standard tier = 1.25x => 1,250,000.
         var customer = new CustomerProfileBuilder().WithType(CustomerType.Standard).Build();
         var property = new PropertyDetailsBuilder().WithEstimatedValue(1_000_000_000m).WithYearBuilt(2015).Build();
         var request = new GenerateQuoteRequest(customer, property, CoverageTier.Standard);
@@ -254,7 +254,7 @@ public class InsuranceQuoteEngineTests
     [Fact]
     public void GenerateQuote_ShouldApplyComprehensiveCoverageMultiplier_Of160Percent()
     {
-        // Arrange: Nhà 1 tỷ -> Base 1,000,000. Comprehensive tier = 1.60x => 1,600,000.
+        // Arrange: 1B VND property -> Base 1,000,000. Comprehensive tier = 1.60x => 1,600,000.
         var customer = new CustomerProfileBuilder().WithType(CustomerType.Standard).Build();
         var property = new PropertyDetailsBuilder().WithEstimatedValue(1_000_000_000m).WithYearBuilt(2015).Build();
         var request = new GenerateQuoteRequest(customer, property, CoverageTier.Comprehensive);
@@ -271,7 +271,7 @@ public class InsuranceQuoteEngineTests
     [Fact]
     public void GenerateQuote_ShouldApplyPremiumCustomerDiscount_Of10Percent()
     {
-        // Arrange: Nhà 1 tỷ, gói Basic (1,000,000). Khách Premium giảm 10% => còn 900,000.
+        // Arrange: 1B property, Basic tier (1,000,000). Premium customer gets 10% discount => 900,000.
         var customer = new CustomerProfileBuilder().AsPremium().Build();
         var property = new PropertyDetailsBuilder().WithEstimatedValue(1_000_000_000m).WithYearBuilt(2015).Build();
         var request = new GenerateQuoteRequest(customer, property, CoverageTier.Basic);
@@ -288,7 +288,7 @@ public class InsuranceQuoteEngineTests
     [Fact]
     public void GenerateQuote_ShouldApplyVipDiscount_Of20Percent()
     {
-        // Arrange: Nhà 1 tỷ, gói Comprehensive (1,600,000). Khách VIP được giảm 20% => còn 1,280,000.
+        // Arrange: 1B property, Comprehensive tier (1,600,000). VIP customer gets 20% discount => 1,280,000.
         var customer = new CustomerProfileBuilder().AsVip().Build();
         var property = new PropertyDetailsBuilder().WithEstimatedValue(1_000_000_000m).WithYearBuilt(2015).Build();
         var request = new GenerateQuoteRequest(customer, property, CoverageTier.Comprehensive);
@@ -305,7 +305,7 @@ public class InsuranceQuoteEngineTests
     [Fact]
     public void GenerateQuote_ShouldNotApplyDiscount_WhenCustomerHasPastClaims()
     {
-        // Arrange: Khách VIP (đáng lẽ giảm 20%) nhưng có tiền sử bồi thường (HasPastClaims = true) => Mất quyền giảm giá
+        // Arrange: VIP customer (normally 20% discount) but with claims history (HasPastClaims = true) => No discount
         var customer = new CustomerProfileBuilder()
             .AsVip()
             .WithPastClaims(true)
@@ -318,7 +318,7 @@ public class InsuranceQuoteEngineTests
 
         // Assert
         result.Status.Should().Be(QuoteStatus.Approved);
-        result.FinalPremium.Should().Be(1_000_000m); // Không được giảm, giữ nguyên 1,000,000
+        result.FinalPremium.Should().Be(1_000_000m); // Keeps full 1,000,000 without discount
     }
 
     #endregion

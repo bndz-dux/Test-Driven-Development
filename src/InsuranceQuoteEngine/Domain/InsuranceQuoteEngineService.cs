@@ -2,7 +2,7 @@ namespace InsuranceQuoteEngine.Domain;
 
 public class InsuranceQuoteEngineService
 {
-    private const decimal MinInsurablePropertyValue = 100_000_000m; // 100 triệu VND
+    private const decimal MinInsurablePropertyValue = 100_000_000m; // 100M VND
     private const decimal BaseRateMultiplier = 0.001m;              // 0.1%
     private const int QuoteValidityDays = 30;
 
@@ -20,7 +20,7 @@ public class InsuranceQuoteEngineService
         var now = _clock.UtcNow;
         var quoteId = Guid.NewGuid();
 
-        // 1. Kiểm tra các điều kiện từ chối (Decline Rules - BR-01, BR-04)
+        // 1. Check decline rules (Decline Rules - BR-01, BR-04)
         if (request.Customer.Age < 18 || request.Customer.Age > 75)
         {
             return new QuoteResult(
@@ -45,7 +45,7 @@ public class InsuranceQuoteEngineService
                 ExpiresAtUtc: now);
         }
 
-        // 2. Kiểm tra các điều kiện chuyển chuyên viên duyệt (Referral Rules - BR-02, BR-03)
+        // 2. Check referral rules (Referral Rules - BR-02, BR-03)
         if (request.Property.IsInFloodZone)
         {
             return new QuoteResult(
@@ -70,10 +70,10 @@ public class InsuranceQuoteEngineService
                 ExpiresAtUtc: now.AddDays(QuoteValidityDays));
         }
 
-        // 3. Tính phí cơ sở (Base Premium - BR-05)
+        // 3. Calculate base premium (Base Premium - BR-05)
         var basePremium = request.Property.EstimatedValue * BaseRateMultiplier;
 
-        // 4. Áp dụng hệ số gói bảo hiểm (Coverage Tier - BR-06)
+        // 4. Apply coverage tier multiplier (Coverage Tier - BR-06)
         var coverageMultiplier = request.Coverage switch
         {
             CoverageTier.Standard => 1.25m,
@@ -83,7 +83,7 @@ public class InsuranceQuoteEngineService
 
         var premiumAfterCoverage = basePremium * coverageMultiplier;
 
-        // 5. Tính toán chiết khấu khách hàng (Customer Discounts & Claims - BR-07, BR-08)
+        // 5. Calculate customer discounts & claims adjustments (BR-07, BR-08)
         var discountPercentage = 0.0m;
         if (!request.Customer.HasPastClaims)
         {

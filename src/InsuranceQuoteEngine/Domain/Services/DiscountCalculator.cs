@@ -11,7 +11,7 @@ public class DiscountCalculator
 {
     private const decimal LargeOrderThreshold = 5_000_000m;
     private const decimal LargeOrderBonusDiscount = 0.05m;
-    private const decimal MaxDiscountCap = 0.30m; // 30% tối đa
+    private const decimal MaxDiscountCap = 0.30m; // 30% maximum cap
 
     public decimal CalculateDiscount(
         CustomerMembership membership, 
@@ -32,7 +32,7 @@ public class DiscountCalculator
 
         totalDiscount += Math.Max(0m, extraCouponDiscount);
 
-        // Áp dụng giới hạn tối đa
+        // Apply maximum discount cap
         return Math.Min(totalDiscount, MaxDiscountCap);
     }
 

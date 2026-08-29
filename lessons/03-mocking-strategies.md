@@ -1,25 +1,25 @@
-# Lesson 03: Chiến lược Mocking & Cô lập phụ thuộc với Moq (Mocking Strategies)
+# Lesson 03: Mocking Strategies & Isolating Dependencies with Moq
 
-## 🎯 Mục tiêu bài học
-- Hiểu rõ bản chất của **Test Doubles** và phân biệt: **Dummy**, **Stub**, **Mock**, **Spy**, **Fake**.
-- Sử dụng thành thạo thư viện **Moq** trong .NET:
+## 🎯 Lesson Objectives
+- Understand the taxonomy of **Test Doubles**: **Dummy**, **Stub**, **Mock**, **Spy**, and **Fake**.
+- Master the **Moq** mocking library in .NET:
   - `Setup()` & `Returns()` / `ReturnsAsync()`
   - `Throws()` / `ThrowsAsync()`
-  - `Verify()` với `Times.Once()`, `Times.Never()`
-  - Khớp đối số linh hoạt với `It.IsAny<T>()`, `It.Is<T>(predicate)`
-- Nhận diện và loại bỏ **Over-Mocking** (Mock quá đà làm hỏng giá trị của test).
-- **Thực hành:** Xây dựng và viết bộ 15–20 Unit Tests cho `OrderService` với các kịch bản bất đồng bộ (async), ngoại lệ và kiểm tra tương tác.
+  - `Verify()` with `Times.Once()`, `Times.Never()`
+  - Flexible argument matching with `It.IsAny<T>()`, `It.Is<T>(predicate)`
+- Identify and eliminate **Over-Mocking** (excessive mocking that undermines test value).
+- **Hands-on:** Build and write 15–20 unit tests for `OrderService` covering asynchronous execution, exceptions, and interaction verification.
 
 ---
 
-## 📖 1. Tổng quan về Test Doubles
+## 📖 1. Overview of Test Doubles
 
-Khi kiểm thử một lớp (gọi là **SUT - System Under Test**), lớp đó thường phụ thuộc vào các dịch vụ bên ngoài (Database, Payment Gateway, Third-party API, Message Queue). Chúng ta không thể gọi các dịch vụ thật đó trong Unit Test vì:
-- Quá chậm.
-- Không ổn định (mất mạng, DB down).
-- Gây tác dụng phụ (trừ tiền thật, gửi email thật, ghi bẩn database).
+When testing a class (the **System Under Test - SUT**), it often depends on out-of-process services (Databases, Payment Gateways, Third-party APIs, Message Queues). Invoking real services in unit tests is problematic because:
+- They are slow.
+- They are non-deterministic (network timeouts, database unavailability).
+- They produce unwanted side effects (charging real credit cards, sending emails, mutating shared persistent databases).
 
-Để giải quyết, ta sử dụng **Test Doubles** (vật đóng thế):
+We resolve this using **Test Doubles**:
 
 ```text
                ┌───────────────────────┐
@@ -30,53 +30,53 @@ Khi kiểm thử một lớp (gọi là **SUT - System Under Test**), lớp đó
      ┌───────┐        ┌───────┐        ┌──────┐       ┌───────┐
      │ Dummy │        │ Stub  │        │ Mock │       │ Fake  │
      └───────┘        └───────┘        └──────┘       └───────┘
-  (Chỉ truyền cho  (Trả về dữ liệu   (Kiểm tra xem    (Bản cài đặt
-   đủ tham số,      cố định khi       method có được   nhẹ, ví dụ:
-   không dùng)      được gọi)         gọi hay không)   InMemoryDB)
+  (Passed only to   (Returns fixed   (Verifies whether (Lightweight real
+   satisfy method    data when        methods were      implementation, e.g.
+   parameters)       invoked)         called as expected) InMemory DB)
 ```
 
-- **Stub (State Verification):** Cung cấp sẵn câu trả lời giả lập cho các cuộc gọi từ SUT.
-- **Mock (Behavior / Interaction Verification):** Ghi nhận và cho phép kiểm tra xem SUT có gọi đúng method, đúng số lần, đúng tham số kỳ vọng hay không.
+- **Stub (State Verification):** Pre-programs indirect inputs to the SUT with fixed responses.
+- **Mock (Behavior / Interaction Verification):** Records and asserts on observable interactions between the SUT and its collaborators (invocations, argument matching, call frequencies).
 
 ---
 
-## ⚠️ 2. Cạm bẫy "Over-Mocking" và Quy tắc vàng
+## ⚠️ 2. The Over-Mocking Trap & Best Practices
 
-### ❌ Khi nào KHÔNG NÊN Mock?
-1. **Domain Entities / Value Objects:** Tuyệt đối không mock `Customer`, `Order`, `Money`. Hãy new object thật!
-2. **Pure Functions / Logic nội bộ:** Các hàm tính toán thuần túy không có I/O.
-3. **Mọi class nội bộ:** Không nên mock từng class con bên trong module nếu chúng có thể chạy nhanh trên bộ nhớ.
+### ❌ When NOT to Mock:
+1. **Domain Entities / Value Objects:** Never mock `Customer`, `Order`, or `Money`. Instantiate real objects.
+2. **Pure Functions / Internal Algorithms:** Pure computation without I/O.
+3. **Internal Helpers:** Avoid mocking private or internal classes within the same bounded context if they can execute fast in memory.
 
-### ✅ Khi nào NÊN Mock?
-1. **Out-of-process Dependencies (I/O):**
+### ✅ When to Mock:
+1. **Out-of-process Collaborators (I/O Boundaries):**
    - Database Repositories (`ICustomerRepository`, `IOrderRepository`)
    - External APIs (`IPaymentGateway`, `ISmsService`, `IEmailSender`)
    - Message Brokers (`IEventBus`, `IMessageQueue`)
-   - Đồng hồ hệ thống (`ITimeProvider`, `IClock`)
+   - System Clock (`ITimeProvider`, `IClock`)
 
 ---
 
-## 🛠️ 3. Thực hành Step-by-Step: Xây dựng & Kiểm thử `OrderService`
+## 🛠️ 3. Step-by-Step Exercise: Implementing & Testing `OrderService`
 
-### Bài toán nghiệp vụ:
-Xây dựng `OrderService` để xử lý đơn hàng:
-1. Nhận vào `CreateOrderRequest(Guid CustomerId, decimal Amount)`.
-2. Kiểm tra khách hàng trong `ICustomerRepository`:
-   - Nếu không tìm thấy khách hàng → Ném `CustomerNotFoundException`.
-   - Nếu tài khoản khách hàng bị khóa (`IsBlocked == true`) → Ném `CustomerBlockedException`.
-3. Kiểm tra số tiền `Amount`:
-   - Nếu `Amount <= 0` → Ném `ArgumentOutOfRangeException`.
-4. Gọi `IPaymentService.ProcessPaymentAsync(customerId, amount)`:
-   - Nếu thanh toán thất bại (`Success == false`) → Ném `PaymentFailedException`.
-5. Tạo và lưu `Order` mới vào `IOrderRepository`.
-6. Trả về mã đơn hàng `OrderId`.
-7. **Quy tắc tương tác:** Nếu kiểm tra khách hàng thất bại, tuyệt đối **không** được gọi `IPaymentService` hay `IOrderRepository`.
+### Business Requirements:
+Build an `OrderService` to process checkout orders:
+1. Receives `CreateOrderRequest(Guid CustomerId, decimal Amount)`.
+2. Verifies the customer via `ICustomerRepository`:
+   - If customer not found → Throw `CustomerNotFoundException`.
+   - If customer account is blocked (`IsBlocked == true`) → Throw `CustomerBlockedException`.
+3. Validates order `Amount`:
+   - If `Amount <= 0` → Throw `ArgumentOutOfRangeException`.
+4. Calls `IPaymentService.ProcessPaymentAsync(customerId, amount)`:
+   - If payment fails (`Success == false`) → Throw `PaymentFailedException`.
+5. Instantiates and persists a new `Order` via `IOrderRepository`.
+6. Returns the generated `OrderId`.
+7. **Interaction Constraint:** If customer validation fails, the service must **never** call `IPaymentService` or `IOrderRepository`.
 
 ---
 
-### Bước 3.1: Tạo Domain Models, Exceptions & Interfaces
+### Step 3.1: Create Domain Models, Exceptions & Interfaces
 
-Tạo file `src/InsuranceQuoteEngine/Domain/OrderModels.cs`:
+Create file `src/InsuranceQuoteEngine/Domain/OrderModels.cs`:
 
 ```csharp
 namespace InsuranceQuoteEngine.Domain;
@@ -108,7 +108,7 @@ public class PaymentFailedException : Exception
 }
 ```
 
-Tạo file `src/InsuranceQuoteEngine/Application/IOrderDependencies.cs`:
+Create file `src/InsuranceQuoteEngine/Application/IOrderDependencies.cs`:
 
 ```csharp
 using InsuranceQuoteEngine.Domain;
@@ -133,9 +133,9 @@ public interface IOrderRepository
 
 ---
 
-### Bước 3.2: Cài đặt `OrderService`
+### Step 3.2: Implement `OrderService`
 
-Tạo file `src/InsuranceQuoteEngine/Application/OrderService.cs`:
+Create file `src/InsuranceQuoteEngine/Application/Services/OrderService.cs`:
 
 ```csharp
 using InsuranceQuoteEngine.Domain;
@@ -167,7 +167,7 @@ public class OrderService
             throw new ArgumentOutOfRangeException(nameof(request.Amount), "Order amount must be greater than zero.");
         }
 
-        // 1. Kiểm tra khách hàng
+        // 1. Verify customer
         var customer = await _customerRepository.GetByIdAsync(request.CustomerId, cancellationToken);
         if (customer is null)
         {
@@ -179,14 +179,14 @@ public class OrderService
             throw new CustomerBlockedException(request.CustomerId);
         }
 
-        // 2. Xử lý thanh toán
+        // 2. Process payment
         var paymentResult = await _paymentService.ProcessPaymentAsync(request.CustomerId, request.Amount, cancellationToken);
         if (!paymentResult.Success)
         {
             throw new PaymentFailedException(paymentResult.ErrorMessage ?? "Unknown payment error.");
         }
 
-        // 3. Lưu đơn hàng
+        // 3. Persist order
         var order = new Order(Guid.NewGuid(), customer.Id, request.Amount, DateTime.UtcNow);
         await _orderRepository.SaveAsync(order, cancellationToken);
 
@@ -197,9 +197,9 @@ public class OrderService
 
 ---
 
-### Bước 3.3: Viết bộ Unit Tests hoàn chỉnh với Moq
+### Step 3.3: Write the Complete Test Suite with Moq
 
-Tạo file `tests/InsuranceQuoteEngine.UnitTests/Application/OrderServiceTests.cs`:
+Create file `tests/InsuranceQuoteEngine.UnitTests/Application/OrderServiceTests.cs`:
 
 ```csharp
 using FluentAssertions;
@@ -219,7 +219,7 @@ public class OrderServiceTests
 
     public OrderServiceTests()
     {
-        // Khởi tạo SUT với các dependencies đã được mock
+        // Initialize SUT with mocked dependencies
         _sut = new OrderService(
             _customerRepoMock.Object,
             _paymentServiceMock.Object,
@@ -250,13 +250,13 @@ public class OrderServiceTests
         // Assert
         orderId.Should().NotBeEmpty();
 
-        // Verify: Đơn hàng phải được lưu đúng thông tin
+        // Verify: Order must be persisted with matching details
         _orderRepoMock.Verify(x => x.SaveAsync(
             It.Is<Order>(o => o.CustomerId == customerId && o.Amount == 150m && o.Id == orderId),
             It.IsAny<CancellationToken>()), 
             Times.Once);
 
-        // Verify: PaymentService chỉ được gọi duy nhất 1 lần
+        // Verify: PaymentService is called exactly once
         _paymentServiceMock.Verify(x => x.ProcessPaymentAsync(customerId, 150m, It.IsAny<CancellationToken>()), Times.Once);
     }
 
@@ -273,7 +273,7 @@ public class OrderServiceTests
 
         _customerRepoMock
             .Setup(x => x.GetByIdAsync(customerId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Customer?)null); // Giả lập không tìm thấy
+            .ReturnsAsync((Customer?)null); // Simulate customer not found
 
         // Act
         Func<Task> act = async () => await _sut.CreateOrderAsync(request);
@@ -282,7 +282,7 @@ public class OrderServiceTests
         await act.Should().ThrowAsync<CustomerNotFoundException>()
             .WithMessage($"*{customerId}*");
 
-        // Verify: Tuyệt đối không được thanh toán hay lưu đơn hàng khi khách không tồn tại!
+        // Verify: Never attempt payment or order saving when customer does not exist
         _paymentServiceMock.Verify(x => x.ProcessPaymentAsync(It.IsAny<Guid>(), It.IsAny<decimal>(), It.IsAny<CancellationToken>()), Times.Never);
         _orderRepoMock.Verify(x => x.SaveAsync(It.IsAny<Order>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -305,7 +305,7 @@ public class OrderServiceTests
         // Assert
         await act.Should().ThrowAsync<CustomerBlockedException>();
 
-        // Verify: Không được thanh toán
+        // Verify: Never attempt payment or order saving when customer is blocked
         _paymentServiceMock.Verify(x => x.ProcessPaymentAsync(It.IsAny<Guid>(), It.IsAny<decimal>(), It.IsAny<CancellationToken>()), Times.Never);
         _orderRepoMock.Verify(x => x.SaveAsync(It.IsAny<Order>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -324,7 +324,7 @@ public class OrderServiceTests
         // Assert
         await act.Should().ThrowAsync<ArgumentOutOfRangeException>();
 
-        // Verify: Không chạm tới bất kỳ repository nào
+        // Verify: Guard clause triggers before calling any repository
         _customerRepoMock.Verify(x => x.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -351,7 +351,7 @@ public class OrderServiceTests
         await act.Should().ThrowAsync<PaymentFailedException>()
             .WithMessage("*Insufficient funds*");
 
-        // Verify: Tuyệt đối KHÔNG lưu đơn hàng vào DB khi thanh toán thất bại
+        // Verify: NEVER persist order to DB when payment fails
         _orderRepoMock.Verify(x => x.SaveAsync(It.IsAny<Order>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
@@ -380,22 +380,22 @@ public class OrderServiceTests
 
 ---
 
-## 📋 Checklist thực hành Mocking chuyên nghiệp
+## 📋 Professional Mocking Checklist
 ```text
-[ ] Luôn khởi tạo mock bằng Interface (vd: Mock<ICustomerRepository>)
-[ ] Dùng ReturnsAsync() cho phương thức bất đồng bộ (Task / ValueTask)
-[ ] Dùng It.IsAny<T>() khi không quan tâm giá trị cụ thể
-[ ] Dùng It.Is<T>(predicate) để kiểm tra sâu thuộc tính của argument
-[ ] Luôn Verify(..., Times.Never) trong các kịch bản lỗi để đảm bảo không phát sinh tác dụng phụ
-[ ] Không bao giờ mock Domain Entities (hãy new đối tượng thật)
+[ ] Always mock interfaces rather than concrete classes (e.g. Mock<ICustomerRepository>)
+[ ] Use ReturnsAsync() for asynchronous methods returning Task / ValueTask
+[ ] Use It.IsAny<T>() when specific argument values do not affect the test outcome
+[ ] Use It.Is<T>(predicate) for targeted assertions on argument properties
+[ ] Always use Verify(..., Times.Never) in error scenarios to ensure no unwanted side-effects occur
+[ ] Never mock domain entities (instantiate real objects directly)
 ```
 
 ---
 
-## ✅ Check-list hoàn thành Lesson 03
-- [ ] Phân biệt được Stub vs Mock vs Fake.
-- [ ] Sử dụng thành thạo `Setup`, `ReturnsAsync`, `ThrowsAsync`, `Verify`, `Times.Once`, `Times.Never`.
-- [ ] Hiểu rõ tác hại của Over-Mocking và biết cách cô lập tầng Application Service với I/O.
-- [ ] Chạy thành công toàn bộ test cases cho `OrderService`.
+## ✅ Lesson 03 Completion Checklist
+- [ ] Differentiate between Stubs, Mocks, and Fakes.
+- [ ] Mastered `Setup`, `ReturnsAsync`, `ThrowsAsync`, `Verify`, `Times.Once`, and `Times.Never`.
+- [ ] Understand how to avoid over-mocking while isolating application services from I/O.
+- [ ] Executed and passed the entire test suite for `OrderService`.
 
-👉 **Tiếp theo:** Chuyển sang [Lesson 04: Xây dựng Test Data Builders & Fixtures](./04-test-data-builders.md)!
+👉 **Next Step:** Proceed to [Lesson 04: Test Data Builders & Fixtures](./04-test-data-builders.md)!

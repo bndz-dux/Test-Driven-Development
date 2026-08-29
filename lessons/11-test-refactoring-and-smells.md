@@ -1,60 +1,60 @@
-# Lesson 11: Nhận diện Test Smells & Nghệ thuật Refactor Test (Test Refactoring)
+# Lesson 11: Test Smells & Test Refactoring
 
-## 🎯 Mục tiêu bài học
-- Nhận diện **10 "Mùi hôi" trong mã kiểm thử (Test Smells)** nguy hiểm nhất khiến test suite trở thành gánh nặng bảo trì.
-- Nắm vững các kỹ thuật Refactor Test Code tương tự như Refactor Production Code.
-- Chuyển đổi các bài test dài dòng, dễ gãy, phụ thuộc trật tự thành các bài test sạch đẹp, dễ đọc trong 10 giây và bền vững trước mọi thay đổi thuật toán.
-- Áp dụng **Quy tắc 5 câu hỏi vàng** khi review bất kỳ bài Unit Test nào.
-- Tổng kết toàn bộ lộ trình TDD Mastery.
+## 🎯 Lesson Objectives
+- Identify the **10 Most Dangerous Test Smells** that turn test suites into maintenance liabilities.
+- Master test refactoring techniques to treat test code with the same engineering rigor as production code.
+- Transform verbose, brittle, order-dependent tests into expressive tests that can be understood in 10 seconds and withstand routine refactoring.
+- Apply the **5 Golden Review Questions** when reviewing unit test code.
+- Conclude and review the entire TDD Mastery curriculum.
 
 ---
 
-## 👃 1. Danh mục 10 Test Smells phổ biến & Cách khắc phục
+## 👃 1. 10 Common Test Smells & Refactoring Strategies
 
-### 1.1. Smell 1: The Mystery Guest (Vị khách bí ẩn / Magic Values)
-- **Dấu hiệu:** Bài test sử dụng các giá trị bí ẩn (ví dụ: `42`, `"X"`, `ID: 99`) mà không giải thích tại sao lại dùng số đó, hoặc dựa vào file ngoài hay dữ liệu seed ngầm định trong DB.
-- **Tác hại:** Người đọc test không hiểu logic vì sao kết quả lại ra như vậy.
-- **Khắc phục:** Định nghĩa rõ ràng hằng số hoặc dùng Test Data Builder với tên biến tường minh:
+### 1.1. Smell 1: The Mystery Guest (Magic Values)
+- **Symptom:** Tests rely on unexplained magic literals (e.g. `42`, `"X"`, `ID: 99`) or implicit database seeds without context.
+- **Problem:** Readers cannot discern what triggers the expected outcome.
+- **Remedy:** Define explicit domain constants or use Test Data Builders with self-documenting parameters:
   ```csharp
   // ❌ Mystery Guest
-  var result = calculator.Calculate(100, 42); // 42 là gì?
+  var result = calculator.Calculate(100, 42); // What does 42 represent?
   
-  // ✅ Tường minh
+  // ✅ Explicit & Expressive
   const decimal highRiskCustomerScore = 42m;
   var result = calculator.Calculate(originalPrice: 100m, riskScore: highRiskCustomerScore);
   ```
 
 ---
 
-### 1.2. Smell 2: Logic in Tests (Chứa IF / ELSE / FOR trong Test)
-- **Dấu hiệu:** Viết vòng lặp `for`, câu lệnh `if...else`, `switch`, `try...catch` thủ công bên trong method test.
-- **Tác hại:** Test code quá phức tạp, có thể chính bài test lại chứa bug tiềm ẩn!
-- **Khắc phục:** Loại bỏ mọi câu lệnh điều kiện. Tách thành nhiều bài test riêng biệt hoặc dùng `[Theory]` với `[InlineData]`.
+### 1.2. Smell 2: Logic in Tests (Conditional Branching in Tests)
+- **Symptom:** Including `for` loops, `if...else` statements, `switch`, or manual `try...catch` blocks within test methods.
+- **Problem:** Tests become complex and may conceal bugs within the test code itself.
+- **Remedy:** Remove all branching logic. Split into separate, focused test methods or use `[Theory]` with `[InlineData]`.
 
 ---
 
 ### 1.3. Smell 3: Over-Mocking & Implementation Detail Verification
-- **Dấu hiệu:** Mock quá nhiều class nội bộ, hoặc gọi `Verify` kiểm tra từng method private/internal được gọi theo thứ tự nào.
-- **Tác hại:** Test cực kỳ "giòn" (Brittle). Chỉ cần đổi tên một method nội bộ hoặc thay đổi cấu trúc class là hàng chục test đỏ dù chức năng vẫn đúng.
-- **Khắc phục:** Chỉ mock các I/O boundary (Database, Third-party API). Kiểm tra kết quả đầu ra (State/Output) thay vì kiểm tra luồng nội bộ.
+- **Symptom:** Mocking internal domain classes, or using `Verify` to assert the internal sequence of private/internal method invocations.
+- **Problem:** Produces brittle tests that break upon routine internal refactoring even when functional behavior remains correct.
+- **Remedy:** Only mock out-of-process boundaries (Database, external APIs). Verify observable outputs and state mutations rather than internal control flow.
 
 ---
 
-### 1.4. Smell 4: Flaky Tests (Test chập chờn)
-- **Dấu hiệu:** Lúc xanh, lúc đỏ mà không thay đổi bất kỳ dòng code nào. Thường do dùng `DateTime.Now`, `Random`, `Thread.Sleep()`, hoặc phụ thuộc vào tốc độ mạng.
-- **Khắc phục:** Thay `DateTime.Now` bằng `IClock` / `TimeProvider`. Tuyệt đối không dùng `Thread.Sleep()`, thay bằng cơ chế điều khiển ảo hoặc đồng bộ rõ ràng.
+### 1.4. Smell 4: Flaky Tests
+- **Symptom:** Tests intermittently pass and fail without code changes. Often caused by ambient calls to `DateTime.Now`, `Random`, `Thread.Sleep()`, or network latency.
+- **Remedy:** Replace `DateTime.Now` with `IClock` / `TimeProvider`. Avoid `Thread.Sleep()`; use deterministic asynchronous synchronization.
 
 ---
 
-### 1.5. Smell 5: Interdependent Tests (Test phụ thuộc thứ tự chạy)
-- **Dấu hiệu:** Test B chỉ pass nếu Test A chạy trước (do dùng chung biến `static`, file tạm, hoặc bản ghi DB chưa dọn dẹp).
-- **Khắc phục:** Đảm bảo mỗi bài test hoàn toàn độc lập (Isolated). Khởi tạo mới SUT trong constructor hoặc dùng Fixture sạch cho từng test.
+### 1.5. Smell 5: Interdependent Tests (Order-Dependent Execution)
+- **Symptom:** Test B only passes if Test A executed first (due to static state, lingering temporary files, or uncleaned database records).
+- **Remedy:** Ensure each test is completely isolated. Re-instantiate the SUT in the constructor or use clean fixture instances per test.
 
 ---
 
-### 1.6. Smell 6: Assert Roulette (Quá nhiều Assert không rõ lý do)
-- **Dấu hiệu:** Một test method gọi 20 lệnh `Assert` liên tiếp cho nhiều hành vi khác nhau. Khi dòng thứ 3 fail, các dòng sau không được chạy và không biết toàn cảnh lỗi ra sao.
-- **Khắc phục:** Một bài test chỉ nên kiểm chứng **một hành vi logic duy nhất**. Nếu cần kiểm tra nhiều trường của cùng 1 đối tượng, hãy dùng `using (new AssertionScope())` của FluentAssertions:
+### 1.6. Smell 6: Assert Roulette
+- **Symptom:** A single test method executes 20 consecutive assertions across unrelated behaviors. When an early assertion fails, subsequent assertions are aborted, hiding the full failure context.
+- **Remedy:** Focus each test on a **single unit of observable behavior**. When verifying multiple fields of the same returned object, use FluentAssertions `using (new AssertionScope())`:
   ```csharp
   using (new AssertionScope())
   {
@@ -66,14 +66,14 @@
 
 ---
 
-## 🛠️ 2. Thực hành Refactor: Trước và Sau (Before vs After)
+## 🛠️ 2. Hands-on Refactoring: Before vs. After
 
-### ❌ Mã nguồn Test ban đầu (Chứa đầy Test Smells):
+### ❌ Legacy Test Code (Riddled with Test Smells):
 ```csharp
 [Fact]
 public void Test1()
 {
-    // Smell: Tên vô nghĩa, Magic numbers, Clutter dữ liệu, Test logic phức tạp
+    // Smells: Cryptic name, magic numbers, object clutter, logic branching in test
     var c = new Customer { Id = Guid.NewGuid(), Name = "A", Email = "a@b.com", Address = "xyz", Age = 30, Status = CustomerStatus.Active };
     var p = new Property { Id = Guid.NewGuid(), Address = "HN", Value = 1000000000m, Year = 2010, InFlood = false };
     
@@ -96,12 +96,12 @@ public void Test1()
 
 ---
 
-### ✅ Mã nguồn Test sau khi Refactor chuẩn mực:
+### ✅ Clean, Refactored Test Code:
 ```csharp
 [Fact]
 public async Task ProcessQuoteAsync_ShouldApproveAndCalculatePremium_WhenCustomerAndPropertyAreStandard()
 {
-    // Arrange: Tường minh, dùng Builder, chỉ giữ dữ liệu mấu chốt
+    // Arrange: Expressive builder pattern isolating test-relevant parameters
     var customer = new CustomerProfileBuilder()
         .WithAge(30)
         .Build();
@@ -117,10 +117,10 @@ public async Task ProcessQuoteAsync_ShouldApproveAndCalculatePremium_WhenCustome
 
     var sut = new QuoteApplicationService(customerRepoMock.Object);
 
-    // Act: Thực thi rõ ràng
+    // Act: Clear single action
     var result = await sut.ProcessQuoteAsync(customer.Id, property, CoverageTier.Basic);
 
-    // Assert: Gom nhóm kiểm tra hành vi, không còn IF/ELSE, không over-mock
+    // Assert: Expressive, cohesive assertion scope with zero branching
     using (new AssertionScope())
     {
         result.Status.Should().Be(QuoteStatus.Approved);
@@ -131,38 +131,38 @@ public async Task ProcessQuoteAsync_ShouldApproveAndCalculatePremium_WhenCustome
 
 ---
 
-## 🔍 3. Quy tắc 5 câu hỏi vàng khi Code Review Test
+## 🔍 3. The 5 Golden Review Questions for Unit Tests
 
-Trước khi chấp thuận bất kỳ bài test nào vào codebase, hãy tự hỏi 5 câu:
+Before approving any test PR, evaluate against these five questions:
 
 ```text
-1. ⏱️ 10 SECONDS RULE: Tôi có thể đọc hiểu mục đích của bài test này trong vòng 10 giây không?
-2. 📖 BUSINESS DOCUMENTATION: Tên test và các bước AAA có mô tả chính xác quy tắc nghiệp vụ không?
-3. 🎲 DETERMINISTIC: Bài test này có đảm bảo luôn luôn cho cùng 1 kết quả ở mọi môi trường không?
-4. 🎯 RIGHT REASON: Khi test bị đỏ, nó có báo đúng lỗi nghiệp vụ vừa bị phá vỡ không?
-5. 🛡️ REFACTOR RESILIENT: Nếu tôi đổi thuật toán nội bộ mà không đổi đầu ra, bài test này có bị vỡ vô lý không?
+1. ⏱️ 10-SECOND RULE: Can a new engineer understand the test's intent and expectations within 10 seconds?
+2. 📖 BUSINESS DOCUMENTATION: Do the test name and AAA phases accurately describe business requirements?
+3. 🎲 DETERMINISTIC: Does this test produce identical results across all execution environments?
+4. 🎯 RIGHT REASON: When this test fails, does it accurately signal broken business behavior?
+5. 🛡️ REFACTOR RESILIENT: Will this test remain green during internal algorithm refactoring if external behavior is unchanged?
 ```
 
 ---
 
-## 🏆 4. Bảng kiểm duyệt tổng kết (Definition of Done Mastery)
+## 🏆 4. Definition of Done Checklist
 
-Chúc mừng bạn đã hoàn thành toàn bộ 12 bài học của lộ trình TDD Mastery! Hãy tự đối chiếu bản thân với bảng tiêu chuẩn cuối cùng:
+Congratulations on completing all 12 lessons of the TDD Mastery curriculum! Review your mastery against this checklist:
 
-- [x] **xUnit & AAA:** Thành thạo cấu trúc Arrange – Act – Assert và `[Fact]`, `[Theory]`.
-- [x] **Naming Standard:** 100% test đặt tên theo chuẩn `Method_ShouldExpectedBehavior_WhenCondition`.
-- [x] **Boundary Coverage:** Luôn kiểm tra các điểm biên và phân vùng tương đương.
-- [x] **Moq Mastery:** Cô lập đúng I/O dependencies, không over-mock domain models.
-- [x] **Test Data Builders:** Tạo thư viện Builder sạch đẹp, loại bỏ hoàn toàn Test Clutter.
-- [x] **TDD Cycle:** Phản xạ tự nhiên với chu trình RED → GREEN → REFACTOR.
-- [x] **Time Control:** Kiểm soát 100% logic phụ thuộc thời gian bằng `IClock` / `TimeProvider`.
-- [x] **Mutation Testing:** Sử dụng Stryker.NET và đạt Mutation Score ≥ 80%.
-- [x] **Code Coverage:** Đo độ phủ với Coverlet, xem báo cáo ReportGenerator, đạt Line ≥ 80% & Branch ≥ 75%.
-- [x] **CI/CD Quality Gates:** Tự động hóa kiểm tra chất lượng trên GitHub Actions / Azure DevOps.
-- [x] **Clean Test Code:** Nhận diện và loại bỏ hoàn toàn các Test Smells.
+- [x] **xUnit & AAA:** Mastered Arrange – Act – Assert patterns, `[Fact]`, and `[Theory]`.
+- [x] **Naming Standards:** 100% adherence to `Method_ShouldExpectedBehavior_WhenCondition`.
+- [x] **Boundary Analysis:** Consistent application of Equivalence Partitioning and Boundary Value Analysis.
+- [x] **Moq Mastery:** Isolated I/O boundaries while eliminating over-mocking.
+- [x] **Test Data Builders:** Clean builder libraries eliminating test clutter.
+- [x] **TDD Cycle:** Intuitive RED → GREEN → REFACTOR discipline.
+- [x] **Time Control:** Deterministic time manipulation via `IClock` / `TimeProvider`.
+- [x] **Mutation Testing:** Validated test suite sensitivity using Stryker.NET (Score ≥ 80%).
+- [x] **Code Coverage:** Measured via Coverlet & ReportGenerator (Line ≥ 80%, Branch ≥ 75%).
+- [x] **CI/CD Quality Gates:** Enforced quality standards in automated GitHub Actions / Azure DevOps pipelines.
+- [x] **Clean Test Code:** Proactively detected and eliminated test smells.
 
 ---
 
-> 🚀 **Lời kết:**  
-> *"Mục tiêu tối thượng của TDD và Unit Testing không phải là để viết thật nhiều test đối phó.  
-> Mục tiêu là tạo ra một bộ khung bảo hiểm vững chắc giúp bạn và đồng đội **luôn tự tin thay đổi, nâng cấp và bàn giao phần mềm** mà không bao giờ phải lo sợ làm gãy hệ thống!"*
+> 🚀 **Closing Thought:**  
+> *"The ultimate goal of TDD and Unit Testing is not to accumulate test volume for compliance.  
+> The goal is to build a reliable safety harness empowering you and your team to **fearlessly innovate, refactor, and deliver software** with confidence!"*
