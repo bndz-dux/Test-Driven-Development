@@ -1,0 +1,19 @@
+{
+    "stryker-config": {
+        "project": "InsuranceQuoteEngine.csproj",
+        "reporters": [
+            "progress",
+            "html",
+            "cleartext"
+        ],
+        "thresholds": {
+            "high": 85,
+            "low": 80,
+            "break": 70
+        },
+        "mutate": [
+            "Domain/**/*.cs",
+            "!Domain/Exceptions/**/*.cs"
+        ]
+    }
+}
