@@ -488,3 +488,5 @@ $RECYCLE.BIN/
 [Cc]overage[Rr]eport/
 [Ss]tryker[Oo]utput/
 coverage.json
+
+.ua/
